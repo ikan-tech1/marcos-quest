@@ -135,6 +135,7 @@ export class GameScene extends Phaser.Scene {
 
     const cam = this.cameras.main;
     cam.setBounds(0, 0, this.builtLevel.width * TILE_SIZE, this.builtLevel.height * TILE_SIZE + 200);
+    cam.roundPixels = true;
     cam.startFollow(this.player, true, 0.12, 0.08);
     cam.setDeadzone(100, 60);
 
@@ -187,9 +188,9 @@ export class GameScene extends Phaser.Scene {
     this.syncHud();
 
     const cam = this.cameras.main;
-    this.parallaxMountains.x = cam.scrollX * 0.15;
-    this.parallaxClouds.x = cam.scrollX * 0.25;
-    this.parallaxHills.x = cam.scrollX * 0.45;
+    this.parallaxMountains.x = Math.round(cam.scrollX * 0.15);
+    this.parallaxClouds.x = Math.round(cam.scrollX * 0.25);
+    this.parallaxHills.x = Math.round(cam.scrollX * 0.45);
   }
 
   private updateCamera(): void {

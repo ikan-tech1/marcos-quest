@@ -652,11 +652,6 @@ body {
   isolation: isolate;
 }
 
-.game-scaler {
-  transform-origin: top left;
-  position: relative;
-}
-
 .stage-ground-lip {
   height: 10px;
   margin: 0 auto;
@@ -674,16 +669,15 @@ body {
 #game-container {
   display: block;
   line-height: 0;
-  width: 800px;
-  height: 480px;
+  width: calc(800px * var(--game-scale, 1));
+  height: calc(480px * var(--game-scale, 1));
 }
 
 #game-container canvas {
   display: block;
-  width: 800px !important;
-  height: 480px !important;
   image-rendering: pixelated;
   image-rendering: crisp-edges;
+  image-rendering: -moz-crisp-edges;
 }
 
 /* ─── Overlays ─── */

@@ -125,6 +125,12 @@ export function App() {
   }, [isCrispStage]);
 
   useEffect(() => {
+    const game = gameRef.current;
+    if (!game) return;
+    game.scale.setZoom(gameScale);
+  }, [gameScale]);
+
+  useEffect(() => {
     if (isCrispStage) setTilt({ x: 0, y: 0 });
   }, [isCrispStage]);
 
@@ -218,28 +224,25 @@ export function App() {
           <div className={`game-cabinet${isCrispStage ? ' game-cabinet--play' : ''}`}>
             <div
               className="game-cabinet-inner"
-              style={{ width: scaledW, height: scaledH }}
+              style={
+                {
+                  width: scaledW,
+                  height: scaledH,
+                  '--game-scale': gameScale,
+                } as React.CSSProperties
+              }
             >
-              <div
-                className="game-scaler"
-                style={{
-                  width: GAME_WIDTH,
-                  height: GAME_HEIGHT,
-                  transform: `scale(${gameScale})`,
-                }}
-              >
-                <div id="game-container" ref={containerRef} />
-                {screen === 'loading' && <LoadingOverlay />}
-                {screen === 'menu' && <MenuOverlay />}
-                {screen === 'playing' && <HUD hud={hud} />}
-                {screen === 'level-clear' && (
-                  <>
-                    <HUD hud={hud} />
-                    <LevelClearOverlay />
-                  </>
-                )}
-                {screen === 'game-over' && <GameOverOverlay state={gameOver} />}
-              </div>
+              <div id="game-container" ref={containerRef} />
+              {screen === 'loading' && <LoadingOverlay />}
+              {screen === 'menu' && <MenuOverlay />}
+              {screen === 'playing' && <HUD hud={hud} />}
+              {screen === 'level-clear' && (
+                <>
+                  <HUD hud={hud} />
+                  <LevelClearOverlay />
+                </>
+              )}
+              {screen === 'game-over' && <GameOverOverlay state={gameOver} />}
             </div>
             {isCrispStage && <div className="stage-ground-lip" style={{ width: scaledW }} />}
           </div>
