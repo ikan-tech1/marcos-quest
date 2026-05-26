@@ -98,15 +98,21 @@ export function App() {
     };
   }, []);
 
+  const isCrispStage = screen === 'playing' || screen === 'level-clear';
+
+  useEffect(() => {
+    if (isCrispStage) setTilt({ x: 0, y: 0 });
+  }, [isCrispStage]);
+
   const handleMouseMove = useCallback((e: React.MouseEvent) => {
-    if (!stageRef.current) return;
+    if (!stageRef.current || isCrispStage) return;
     const rect = stageRef.current.getBoundingClientRect();
     const cx = rect.left + rect.width / 2;
     const cy = rect.top + rect.height / 2;
     const dx = (e.clientX - cx) / (rect.width / 2);
     const dy = (e.clientY - cy) / (rect.height / 2);
-    setTilt({ x: -dy * 6, y: dx * 6 });
-  }, []);
+    setTilt({ x: -dy * 4, y: dx * 4 });
+  }, [isCrispStage]);
 
   const handleMouseLeave = useCallback(() => {
     setTilt({ x: 0, y: 0 });
@@ -114,39 +120,78 @@ export function App() {
 
   return (
     <div className="app-shell">
-      <div className="bg-ambient" />
-      <div className="bg-grid" />
-      <div className="floating-orb" />
-      <div className="floating-orb" />
-      <div className="floating-orb" />
+      {/* Mushroom-kingdom sky & parallax world */}
+      <div className="world-sky" aria-hidden="true" />
+      <div className="world-sun" aria-hidden="true" />
+
+      <div className="world-clouds" aria-hidden="true">
+        <div className="cloud cloud-1" />
+        <div className="cloud cloud-2" />
+        <div className="cloud cloud-3" />
+        <div className="cloud cloud-4" />
+        <div className="cloud cloud-5" />
+      </div>
+
+      <div className="world-hills" aria-hidden="true">
+        <div className="hill hill-far" />
+        <div className="hill hill-mid" />
+        <div className="hill hill-near" />
+      </div>
+
+      <div className="world-floaters" aria-hidden="true">
+        <div className="floater floater-coin floater-1" />
+        <div className="floater floater-coin floater-2" />
+        <div className="floater floater-coin floater-3" />
+        <div className="floater floater-qblock floater-4" />
+        <div className="floater floater-brick floater-5" />
+        <div className="floater floater-brick floater-6" />
+        <div className="floater floater-pipe" />
+      </div>
+
+      <div className="world-ground" aria-hidden="true">
+        <div className="ground-grass" />
+        <div className="ground-dirt" />
+      </div>
 
       <div
         ref={stageRef}
-        className="game-stage"
+        className={`game-stage${isCrispStage ? ' game-stage--crisp' : ''}`}
         onMouseMove={handleMouseMove}
         onMouseLeave={handleMouseLeave}
-        style={{
-          transform: `rotateX(${tilt.x}deg) rotateY(${tilt.y}deg)`,
-        }}
+        style={
+          isCrispStage
+            ? undefined
+            : { transform: `rotateX(${tilt.x}deg) rotateY(${tilt.y}deg)` }
+        }
       >
-        <div className="game-cabinet">
-          <div className="game-cabinet-inner">
-            <div id="game-container" ref={containerRef} />
-            {screen === 'loading' && <LoadingOverlay />}
-            {screen === 'menu' && <MenuOverlay />}
-            {screen === 'playing' && <HUD hud={hud} />}
-            {screen === 'level-clear' && (
-              <>
-                <HUD hud={hud} />
-                <LevelClearOverlay />
-              </>
-            )}
-            {screen === 'game-over' && <GameOverOverlay state={gameOver} />}
+        <div className="portal-frame">
+          <div className="portal-frame-top">
+            <span className="portal-bolt" />
+            <span className="portal-label">WORLD 1-1</span>
+            <span className="portal-bolt" />
           </div>
+          <div className="game-cabinet">
+            <div className="game-cabinet-inner">
+              <div id="game-container" ref={containerRef} />
+              {screen === 'loading' && <LoadingOverlay />}
+              {screen === 'menu' && <MenuOverlay />}
+              {screen === 'playing' && <HUD hud={hud} />}
+              {screen === 'level-clear' && (
+                <>
+                  <HUD hud={hud} />
+                  <LevelClearOverlay />
+                </>
+              )}
+              {screen === 'game-over' && <GameOverOverlay state={gameOver} />}
+            </div>
+          </div>
+          <div className="portal-frame-bottom" />
         </div>
       </div>
 
-      <footer className="site-footer">MARCO&apos;S QUEST — Built with Phaser + React</footer>
+      <footer className="site-footer">
+        EASHAN&apos;S QUEST — Built with Phaser + React
+      </footer>
     </div>
   );
 }

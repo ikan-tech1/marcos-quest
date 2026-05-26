@@ -7,21 +7,37 @@ export function MenuOverlay() {
 
   return (
     <div className="overlay overlay-menu">
-      <div className="glass-panel" style={{ textAlign: 'center', maxWidth: 520 }}>
-        <h1 className="title-3d">MARCO&apos;S QUEST</h1>
-        <p className="subtitle">A Next-Gen Platform Adventure</p>
+      <div className="menu-world-decor" aria-hidden="true">
+        <div className="decor-qblock decor-qblock-left" />
+        <div className="decor-qblock decor-qblock-right" />
+        <div className="decor-coin decor-coin-1" />
+        <div className="decor-coin decor-coin-2" />
+        <div className="decor-coin decor-coin-3" />
+        <div className="decor-brick decor-brick-1" />
+        <div className="decor-brick decor-brick-2" />
+      </div>
+
+      <div className="menu-panel">
+        <p className="menu-hero-tag">Welcome, Eashan!</p>
+        <h1 className="title-3d">EASHAN&apos;S QUEST</h1>
+        <p className="subtitle">A Mushroom Kingdom Adventure</p>
 
         <div className="feature-pills">
-          <span className="pill">Double Jump</span>
-          <span className="pill">Wall Jump</span>
-          <span className="pill">Dash</span>
-          <span className="pill">Combos</span>
-          <span className="pill">Power-Ups</span>
+          <span className="pill pill-green">Double Jump</span>
+          <span className="pill pill-green">Wall Jump</span>
+          <span className="pill pill-red">Dash</span>
+          <span className="pill pill-gold">Combos</span>
+          <span className="pill pill-blue">Power-Ups</span>
         </div>
 
-        <button type="button" className="btn-primary" onClick={start}>
-          START GAME
+        <button type="button" className="btn-start-coin" onClick={start}>
+          <span className="btn-start-coin-inner">
+            <span className="btn-start-coin-shine" />
+            START GAME
+          </span>
         </button>
+
+        <p className="menu-press-start blink">▶ Press to Begin ◀</p>
 
         <div className="controls-grid">
           <div><kbd>←→</kbd> / <kbd>A D</kbd> Move</div>

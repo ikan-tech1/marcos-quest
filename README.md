@@ -1,6 +1,6 @@
-# Marco's Quest
+# Eashan's Quest
 
-A next-gen Mario-style platformer built with **Phaser 4**, **React**, and **TypeScript**. Features double jump, dash trails, combo scoring, moving platforms, and a polished 3D glass UI shell.
+A next-gen Mario-style platformer built with **Phaser 4**, **React**, and **TypeScript**. Features double jump, dash trails, combo scoring, moving platforms, and a mushroom-kingdom landing page with parallax clouds, hills, and a golden coin start button.
 
 **[Play Live](https://mario-two-lyart.vercel.app)**
 
@@ -16,9 +16,10 @@ A next-gen Mario-style platformer built with **Phaser 4**, **React**, and **Type
 
 ### Frontend
 - **React UI overlay** — menu, HUD, level clear, game over
-- **3D perspective cabinet** — mouse-tilt game stage with CSS depth
-- **Glassmorphism** panels, animated grid floor, floating orbs
-- **Press Start 2P** retro typography + Space Grotesk body font
+- **Mushroom-kingdom landing page** — sky, drifting clouds, green hills, grass/dirt ground strip
+- **Decorative world elements** — bobbing coins, question blocks, brick blocks, pipe (CSS-only)
+- **Portal-style game cabinet** — wooden frame with gold trim, mouse-tilt 3D stage
+- **Golden coin START GAME button** with pixel-art Press Start 2P typography
 
 ## Controls
 
@@ -59,13 +60,13 @@ Deploys automatically to **Vercel** via GitHub integration.
 
 ```
 src/
-├── App.tsx              # React shell + Phaser mount
+├── App.tsx              # React shell + Phaser mount + world background
 ├── game/                # (Phaser scenes in scenes/)
 ├── ui/                  # React overlays (Menu, HUD, GameOver)
 ├── entities/            # Player, Enemy, MovingPlatform, Projectile
 ├── systems/             # Input, Audio, GameState, GameBridge
 ├── levels/              # Level data + builder
-└── styles/global.css    # 3D UI design system
+└── styles/global.css    # Platformer world + UI design system
 ```
 
 ## License
