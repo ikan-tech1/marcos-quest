@@ -2,7 +2,7 @@
 
 A next-gen Mario-style platformer built with **Phaser 4**, **React**, and **TypeScript**. Features double jump, dash trails, combo scoring, moving platforms, and a polished 3D glass UI shell.
 
-**[Play Live](https://marcos-quest.vercel.app)** *(after deploy)*
+**[Play Live](https://mario-two-lyart.vercel.app)**
 
 ## Features
 
