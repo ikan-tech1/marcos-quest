@@ -1,38 +1,45 @@
 import type { HudState } from '../systems/GameBridge';
+import type { ViewMode } from '../systems/Storage';
 import { UISounds } from '../utils/uiSounds';
 
 interface Props {
   hud: HudState;
+  viewMode?: ViewMode;
   isFullscreen?: boolean;
   showControls?: boolean;
   onPause?: () => void;
   onToggleFullscreen?: () => void;
+  onToggleViewMode?: () => void;
 }
 
 export function HUD({
   hud,
+  viewMode = 'fullscreen',
   isFullscreen = false,
   showControls = false,
   onPause,
   onToggleFullscreen,
+  onToggleViewMode,
 }: Props) {
   const timeClass = hud.timeLeft <= 100 ? 'hud-time hud-time--warn' : 'hud-time';
 
   return (
     <div className="overlay overlay-hud">
-      <div className="hud-bar">
+      <header className="hud-bar">
         <div className="hud-plank hud-plank--left">
           <span className="hud-label">SCORE</span>
           <span className="hud-value">{hud.score.toString().padStart(6, '0')}</span>
-          {hud.characterName && (
-            <span className="hud-character">{hud.characterName}</span>
-          )}
+          {hud.characterName ? (
+            <span className="hud-character" title="Hero">
+              ★ {hud.characterName}
+            </span>
+          ) : null}
         </div>
 
         <div className="hud-plank hud-plank--center">
           <span className="hud-world">{hud.world}</span>
           <div className={timeClass}>TIME {Math.ceil(hud.timeLeft)}</div>
-          <div className="hud-progress">
+          <div className="hud-progress" aria-label="Level progress">
             {Array.from({ length: hud.totalLevels }, (_, i) => (
               <span
                 key={i}
@@ -45,27 +52,40 @@ export function HUD({
         <div className="hud-plank hud-plank--right">
           <div className="hud-stat-row">
             <span className="hud-coin-icon" aria-hidden="true" />
-            <span className="hud-value">{hud.coins.toString().padStart(2, '0')}</span>
+            <span className="hud-value">×{hud.coins.toString().padStart(2, '0')}</span>
           </div>
           <div className="hud-stat-row">
             <span className="hud-label">LIVES</span>
-            <span className="hud-value hud-value--lives">{hud.lives}</span>
+            <span className="hud-value hud-value--lives">♥ {hud.lives}</span>
           </div>
-          <div className="hud-high-score">HI {hud.highScore.toString().padStart(6, '0')}</div>
         </div>
-      </div>
+      </header>
 
       {showControls && (
-        <div className="hud-controls">
+        <div className="hud-controls" aria-label="Game controls">
+          {onToggleViewMode && (
+            <button
+              type="button"
+              className="hud-icon-btn hud-icon-btn--view"
+              onClick={() => {
+                UISounds.click();
+                onToggleViewMode();
+              }}
+              aria-label={viewMode === 'arcade' ? 'Switch to fullscreen view' : 'Switch to arcade view'}
+              title={viewMode === 'arcade' ? 'Fullscreen view' : 'Arcade view'}
+            >
+              {viewMode === 'arcade' ? '⛶' : '🕹'}
+            </button>
+          )}
           {onToggleFullscreen && (
             <button
               type="button"
               className="hud-icon-btn"
               onClick={onToggleFullscreen}
-              aria-label={isFullscreen ? 'Exit fullscreen' : 'Enter fullscreen'}
-              title={isFullscreen ? 'Exit fullscreen (F / Esc)' : 'Fullscreen (F)'}
+              aria-label={isFullscreen ? 'Exit browser fullscreen' : 'Enter browser fullscreen'}
+              title={isFullscreen ? 'Exit browser fullscreen (F / Esc)' : 'Browser fullscreen (F)'}
             >
-              {isFullscreen ? '⤢' : '⛶'}
+              {isFullscreen ? '⤢' : '▢'}
             </button>
           )}
           {onPause && (

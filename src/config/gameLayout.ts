@@ -8,12 +8,14 @@ export interface GameLayout {
   top: number;
 }
 
-/** Integer Phaser zoom so the canvas fills the viewport (no CSS scaling). */
+/**
+ * Integer Phaser zoom — cover mode: largest zoom that fills width OR height
+ * (slight edge crop on the other axis; no CSS transform scaling).
+ */
 export function computeGameScale(viewportW: number, viewportH: number): number {
-  return Math.max(
-    1,
-    Math.min(Math.floor(viewportW / GAME_WIDTH), Math.floor(viewportH / GAME_HEIGHT)),
-  );
+  const byWidth = Math.floor(viewportW / GAME_WIDTH);
+  const byHeight = Math.floor(viewportH / GAME_HEIGHT);
+  return Math.max(1, byWidth, byHeight);
 }
 
 export function computeGameLayout(
@@ -27,7 +29,7 @@ export function computeGameLayout(
     gameScale,
     scaledW,
     scaledH,
-    left: Math.max(0, (viewportW - scaledW) / 2),
-    top: Math.max(0, (viewportH - scaledH) / 2),
+    left: (viewportW - scaledW) / 2,
+    top: (viewportH - scaledH) / 2,
   };
 }

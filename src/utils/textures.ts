@@ -253,36 +253,58 @@ export function generateTextures(scene: Phaser.Scene): void {
   const g = scene.make.graphics({ x: 0, y: 0 });
 
   // Tileset pieces (32x32)
-  drawRect(g, 32, 32, 0x6b8e23);
-  g.fillStyle(0x8fbc8f, 1);
-  g.fillRect(2, 2, 28, 8);
+  g.fillStyle(0x5d4037, 1);
+  g.fillRect(0, 14, 32, 18);
+  g.fillStyle(0x6d4c2a, 1);
+  g.fillRect(0, 18, 32, 14);
+  g.fillStyle(0x7cb342, 1);
+  g.fillRect(0, 0, 32, 14);
+  g.fillStyle(0x558b2f, 1);
+  g.fillRect(0, 10, 32, 4);
+  g.fillStyle(0x9ccc65, 1);
+  g.fillRect(4, 2, 6, 4);
+  g.fillRect(18, 4, 8, 3);
+  g.fillRect(26, 2, 4, 4);
+  g.lineStyle(1, 0x33691e, 0.35);
+  g.lineBetween(0, 14, 32, 14);
   g.generateTexture('tile-ground', 32, 32);
   g.clear();
 
-  drawRect(g, 32, 32, 0xc45c26, 0x8b3a12);
-  g.lineStyle(1, 0x8b3a12, 0.6);
+  g.fillStyle(0xc84b0a, 1);
+  g.fillRect(0, 0, 32, 32);
+  g.fillStyle(0xe8651a, 1);
+  g.fillRect(2, 2, 14, 14);
+  g.fillRect(16, 16, 14, 14);
+  g.lineStyle(2, 0x8b2e00, 1);
+  g.strokeRect(1, 1, 30, 30);
+  g.lineStyle(1, 0x6b2200, 0.5);
   for (let y = 8; y < 32; y += 8) {
     g.lineBetween(0, y, 32, y);
-  }
-  for (let x = 16; x < 32; x += 16) {
-    g.lineBetween(x, 0, x, 32);
   }
   g.generateTexture('tile-brick', 32, 32);
   g.clear();
 
-  drawRect(g, 32, 32, 0xf4a020, 0xc47a00);
+  g.fillStyle(0xf5a623, 1);
+  g.fillRect(0, 0, 32, 32);
+  g.fillStyle(0xffd54f, 1);
+  g.fillRect(2, 2, 28, 10);
+  g.fillStyle(0xc47d00, 1);
+  g.fillRect(2, 24, 28, 6);
   g.fillStyle(0xffffff, 1);
   g.fillRect(10, 8, 12, 12);
   g.fillStyle(0x000000, 1);
-  g.fillRect(14, 12, 4, 4);
-  g.fillStyle(0xffd700, 0.4);
-  g.fillRect(2, 2, 8, 8);
+  g.fillRect(13, 11, 6, 6);
+  g.fillStyle(0xffd700, 0.55);
+  g.fillRect(3, 3, 7, 7);
   g.generateTexture('tile-question', 32, 32);
   g.clear();
 
-  drawRect(g, 32, 32, 0xf4a020, 0xc47a00);
-  g.fillStyle(0xffd700, 1);
-  g.fillRect(12, 10, 8, 12);
+  g.fillStyle(0x8d6e4a, 1);
+  g.fillRect(0, 0, 32, 32);
+  g.fillStyle(0x6d4c2a, 1);
+  g.fillRect(2, 2, 28, 28);
+  g.fillStyle(0x5a4028, 1);
+  g.fillRect(10, 10, 12, 12);
   g.generateTexture('tile-question-used', 32, 32);
   g.clear();
 
@@ -347,21 +369,24 @@ export function generateTextures(scene: Phaser.Scene): void {
   g.generateTexture('enemy-flyer', 28, 20);
   g.clear();
 
-  g.fillStyle(0xffaa00, 1);
+  g.fillStyle(0xcc8800, 1);
   g.fillCircle(8, 8, 7);
   g.fillStyle(0xffd700, 1);
-  g.fillCircle(8, 8, 5);
+  g.fillCircle(8, 8, 6);
   g.fillStyle(0xfff8dc, 1);
   g.fillCircle(6, 6, 2);
-  g.fillStyle(0xcc8800, 1);
-  g.fillRect(10, 4, 2, 8);
+  g.fillCircle(10, 5, 1);
+  g.fillStyle(0xffaa00, 0.8);
+  g.fillRect(10, 3, 2, 9);
   g.generateTexture('coin', 16, 16);
   g.clear();
 
-  g.fillStyle(0xffaa00, 1);
-  g.fillEllipse(8, 8, 4, 7);
+  g.fillStyle(0xcc8800, 1);
+  g.fillEllipse(8, 8, 5, 7);
   g.fillStyle(0xffd700, 1);
-  g.fillEllipse(8, 8, 2, 5);
+  g.fillEllipse(8, 8, 3, 6);
+  g.fillStyle(0xfff8dc, 0.9);
+  g.fillRect(7, 4, 2, 4);
   g.generateTexture('coin-side', 16, 16);
   g.clear();
 
@@ -404,34 +429,62 @@ export function generateTextures(scene: Phaser.Scene): void {
   g.generateTexture('particle', 4, 4);
   g.clear();
 
+  g.fillStyle(0x4aa3d4, 1);
+  g.fillRect(0, 0, 800, 120);
   g.fillStyle(0x5bc0eb, 1);
-  g.fillRect(0, 0, 800, 480);
+  g.fillRect(0, 120, 800, 180);
+  g.fillStyle(0x87ceeb, 1);
+  g.fillRect(0, 300, 800, 120);
+  g.fillStyle(0xb8e4f9, 1);
+  g.fillRect(0, 420, 800, 60);
   g.generateTexture('bg-sky', 800, 480);
   g.clear();
 
-  g.fillStyle(0xffffff, 0.8);
-  g.fillEllipse(100, 80, 120, 40);
-  g.fillEllipse(400, 60, 100, 35);
-  g.fillEllipse(650, 100, 140, 45);
-  g.generateTexture('bg-clouds', 800, 200);
+  g.fillStyle(0xffffff, 0.92);
+  const cloudBlobs: [number, number, number, number][] = [
+    [90, 70, 110, 38],
+    [280, 55, 90, 32],
+    [520, 85, 130, 42],
+    [700, 50, 100, 36],
+  ];
+  for (const [cx, cy, cw, ch] of cloudBlobs) {
+    g.fillEllipse(cx, cy, cw, ch);
+    g.fillEllipse(cx - cw * 0.25, cy + 6, cw * 0.55, ch * 0.75);
+    g.fillEllipse(cx + cw * 0.2, cy + 4, cw * 0.5, ch * 0.7);
+  }
+  g.generateTexture('bg-clouds', 800, 160);
   g.clear();
 
-  g.fillStyle(0x2d6a4f, 1);
-  for (let i = 0; i < 800; i += 40) {
-    g.fillTriangle(i, 120, i + 20, 60, i + 40, 120);
+  g.fillStyle(0x66bb6a, 1);
+  for (let x = -30; x < 830; x += 52) {
+    g.fillEllipse(x + 26, 100, 64, 44);
+    g.fillEllipse(x + 48, 96, 42, 32);
+  }
+  g.fillStyle(0x43a047, 1);
+  for (let x = 0; x < 820; x += 68) {
+    g.fillEllipse(x + 34, 108, 78, 38);
+  }
+  g.fillStyle(0x2e7d32, 0.85);
+  for (let x = 20; x < 800; x += 90) {
+    g.fillEllipse(x + 20, 112, 36, 22);
+    g.fillEllipse(x + 50, 110, 28, 18);
   }
   g.generateTexture('bg-hills', 800, 120);
   g.clear();
 
-  g.fillStyle(0x1a4a3a, 0.7);
-  for (let i = 0; i < 800; i += 60) {
-    g.fillTriangle(i, 150, i + 30, 40, i + 60, 150);
+  g.fillStyle(0x1b5e3a, 0.55);
+  for (let x = -40; x < 840; x += 100) {
+    g.fillEllipse(x + 50, 130, 110, 70);
   }
-  g.fillStyle(0x0d3328, 0.5);
-  for (let i = 30; i < 800; i += 80) {
-    g.fillTriangle(i, 160, i + 40, 20, i + 80, 160);
+  g.fillStyle(0x0d4a32, 0.75);
+  for (let x = 0; x < 800; x += 120) {
+    g.fillEllipse(x + 60, 120, 95, 85);
   }
-  g.generateTexture('bg-mountains', 800, 160);
+  g.fillStyle(0x063d28, 0.9);
+  for (let x = 30; x < 780; x += 140) {
+    g.fillEllipse(x + 70, 105, 80, 95);
+  }
+  g.generateTexture('bg-mountains', 800, 150);
   g.clear();
 
   g.fillStyle(0x00f5ff, 0.3);

@@ -7,7 +7,7 @@ import { GameScene } from './scenes/GameScene';
 import { GameBridge } from './systems/GameBridge';
 import type { GameOverState, GameScreen, HudState, StartGamePayload } from './systems/GameBridge';
 import { GameState } from './systems/GameState';
-import { Storage } from './systems/Storage';
+import { Storage, type ViewMode } from './systems/Storage';
 import { VirtualInput } from './systems/VirtualInput';
 import { LEVELS } from './levels/levelData';
 import { MenuOverlay } from './ui/MenuOverlay';
@@ -17,9 +17,10 @@ import { LoadingOverlay } from './ui/LoadingOverlay';
 import { LevelClearOverlay } from './ui/LevelClearOverlay';
 import { PauseOverlay } from './ui/PauseOverlay';
 import { TouchControls } from './ui/TouchControls';
+import { ArcadeCabinet } from './ui/ArcadeCabinet';
 import { UISounds } from './utils/uiSounds';
 import { useFullscreen } from './hooks/useFullscreen';
-import { computeGameLayout, computeGameScale } from './config/gameLayout';
+import { computeViewGameScale, computeViewLayout } from './config/cabinetLayout';
 import { getCharacterById } from './config/characters';
 
 const defaultHud: HudState = {
@@ -63,13 +64,16 @@ export function App() {
     isNewRecord: false,
   });
   const [gameScale, setGameScale] = useState(1);
+  const [viewMode, setViewMode] = useState<ViewMode>(() => Storage.getViewMode());
   const [soundEnabled, setSoundEnabled] = useState(Storage.getSoundEnabled());
   const [showTouch, setShowTouch] = useState(false);
   const [screenVisible, setScreenVisible] = useState(true);
   const [viewport, setViewport] = useState({ w: window.innerWidth, h: window.innerHeight });
 
+  const isArcadeView = viewMode === 'arcade';
   const showGameViewport = GAMEPLAY_SCREENS.includes(screen);
   const showHeroWorld = screen === 'loading' || screen === 'menu';
+  const showGameplayBackdrop = (showGameViewport && !isArcadeView) || showHeroWorld;
 
   const transitionTo = useCallback((next: GameScreen, data?: unknown) => {
     setScreenVisible(false);
@@ -174,12 +178,12 @@ export function App() {
       const w = window.innerWidth;
       const h = window.innerHeight;
       setViewport({ w, h });
-      setGameScale(computeGameScale(w, h));
+      setGameScale(computeViewGameScale(viewMode, w, h));
     };
     updateScale();
     window.addEventListener('resize', updateScale);
     return () => window.removeEventListener('resize', updateScale);
-  }, []);
+  }, [viewMode]);
 
   useEffect(() => {
     if (!showGameViewport && isFullscreen) {
@@ -214,8 +218,17 @@ export function App() {
     UISounds.click();
   }, [soundEnabled]);
 
-  const layout = computeGameLayout(viewport.w, viewport.h, gameScale);
-  const { scaledW, scaledH, left, top } = layout;
+  const toggleViewMode = useCallback(() => {
+    setViewMode((prev) => {
+      const next: ViewMode = prev === 'arcade' ? 'fullscreen' : 'arcade';
+      Storage.setViewMode(next);
+      return next;
+    });
+    UISounds.click();
+  }, []);
+
+  const layout = computeViewLayout(viewMode, viewport.w, viewport.h, gameScale);
+  const { scaledW, scaledH, crtLeft, crtTop } = layout;
 
   const handleToggleFullscreen = useCallback(() => {
     UISounds.click();
@@ -230,10 +243,19 @@ export function App() {
   return (
     <div
       ref={shellRef}
-      className={`app-shell app-shell--${screen}${showGameViewport ? ' app-shell--gameplay' : ' app-shell--hero'}${isFullscreen ? ' app-shell--browser-fullscreen' : ''}`}
+      className={`app-shell app-shell--${screen}${showGameViewport ? ' app-shell--gameplay' : ' app-shell--hero'}${isArcadeView && showGameViewport ? ' app-shell--arcade' : ''}${isFullscreen ? ' app-shell--browser-fullscreen' : ''}`}
       data-transition={screenVisible ? 'in' : 'out'}
     >
-      {showHeroWorld && (
+      {showGameViewport && isArcadeView && (
+        <div className="arcade-room" aria-hidden="true">
+          <div className="arcade-room-spotlight" />
+          <div className="arcade-room-floor" />
+          <span className="arcade-room-neon">★ ARCADE ★</span>
+          <span className="arcade-room-neon arcade-room-neon--right">★ PLAY ★</span>
+        </div>
+      )}
+
+      {showGameplayBackdrop && (
         <>
           <div className="world-sky" aria-hidden="true" />
           <div className="world-sun" aria-hidden="true" />
@@ -243,36 +265,42 @@ export function App() {
             <div className="cloud cloud-static cloud-s3" />
             <div className="cloud cloud-static cloud-s4" />
           </div>
-          <div className="world-clouds world-clouds--drift" aria-hidden="true">
-            <div className="cloud cloud-1" />
-            <div className="cloud cloud-2" />
-            <div className="cloud cloud-3" />
-            <div className="cloud cloud-4" />
-            <div className="cloud cloud-5" />
-          </div>
+          {showHeroWorld && (
+            <div className="world-clouds world-clouds--drift" aria-hidden="true">
+              <div className="cloud cloud-1" />
+              <div className="cloud cloud-2" />
+              <div className="cloud cloud-3" />
+              <div className="cloud cloud-4" />
+              <div className="cloud cloud-5" />
+            </div>
+          )}
           <div className="world-hills" aria-hidden="true">
             <div className="hill hill-far" />
             <div className="hill hill-mid" />
             <div className="hill hill-near" />
           </div>
-          <div className="world-bushes" aria-hidden="true">
-            <div className="bush bush-1" />
-            <div className="bush bush-2" />
-            <div className="bush bush-3" />
-          </div>
-          <div className="world-floaters" aria-hidden="true">
-            <div className="floater floater-coin floater-1" />
-            <div className="floater floater-coin floater-2" />
-            <div className="floater floater-coin floater-3" />
-            <div className="floater floater-qblock floater-4" />
-            <div className="floater floater-brick floater-5" />
-            <div className="floater floater-pipe floater-pipe-left" />
-            <div className="floater floater-pipe floater-pipe-right" />
-          </div>
-          <div className="world-ground" aria-hidden="true">
-            <div className="ground-grass" />
-            <div className="ground-dirt" />
-          </div>
+          {showHeroWorld && (
+            <>
+              <div className="world-bushes" aria-hidden="true">
+                <div className="bush bush-1" />
+                <div className="bush bush-2" />
+                <div className="bush bush-3" />
+              </div>
+              <div className="world-floaters" aria-hidden="true">
+                <div className="floater floater-coin floater-1" />
+                <div className="floater floater-coin floater-2" />
+                <div className="floater floater-coin floater-3" />
+                <div className="floater floater-qblock floater-4" />
+                <div className="floater floater-brick floater-5" />
+                <div className="floater floater-pipe floater-pipe-left" />
+                <div className="floater floater-pipe floater-pipe-right" />
+              </div>
+              <div className="world-ground" aria-hidden="true">
+                <div className="ground-grass" />
+                <div className="ground-dirt" />
+              </div>
+            </>
+          )}
         </>
       )}
 
@@ -285,26 +313,44 @@ export function App() {
             ? ({
                 width: scaledW,
                 height: scaledH,
-                left,
-                top,
+                left: crtLeft,
+                top: crtTop,
                 '--game-scale': gameScale,
               } as React.CSSProperties)
             : undefined
         }
       />
 
+      {showGameViewport && isArcadeView && (
+        <ArcadeCabinet
+          layout={layout}
+          hud={hud}
+          screen={screen}
+          isPlaying={screen === 'playing' || screen === 'level-clear'}
+          isBrowserFullscreen={isFullscreen}
+          onPause={() => GameBridge.emit('pause-game')}
+          onToggleBrowserFullscreen={handleToggleFullscreen}
+          onToggleViewMode={toggleViewMode}
+        />
+      )}
+
       {showGameViewport && (
         <div
-          className="game-viewport game-viewport--fullscreen"
-          style={{ width: scaledW, height: scaledH, left, top }}
+          className={`game-viewport${isArcadeView ? ' game-viewport--cabinet-window' : ' game-viewport--fullscreen'}`}
+          style={{ width: scaledW, height: scaledH, left: crtLeft, top: crtTop }}
         >
+          {isArcadeView && (
+            <div className="cabinet-crt-scanlines cabinet-crt-scanlines--overlay" aria-hidden="true" />
+          )}
           {(screen === 'playing' || screen === 'level-clear' || screen === 'paused') && (
             <HUD
               hud={hud}
+              viewMode={viewMode}
               isFullscreen={isFullscreen}
-              showControls
+              showControls={!isArcadeView}
               onPause={() => GameBridge.emit('pause-game')}
               onToggleFullscreen={handleToggleFullscreen}
+              onToggleViewMode={toggleViewMode}
             />
           )}
           {screen === 'paused' && (
@@ -328,7 +374,9 @@ export function App() {
           <MenuOverlay
             highScore={Storage.getHighScore()}
             soundEnabled={soundEnabled}
+            viewMode={viewMode}
             onToggleSound={toggleSound}
+            onToggleViewMode={toggleViewMode}
           />
         )}
         {screen === 'game-over' && <GameOverOverlay state={gameOver} />}

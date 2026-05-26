@@ -6,14 +6,23 @@ import { LEVELS } from '../levels/levelData';
 import { UISounds } from '../utils/uiSounds';
 import { CharacterSelect } from './CharacterSelect';
 import { getCharacterById } from '../config/characters';
+import type { ViewMode } from '../systems/Storage';
 
 interface Props {
   highScore: number;
   soundEnabled: boolean;
+  viewMode: ViewMode;
   onToggleSound: () => void;
+  onToggleViewMode: () => void;
 }
 
-export function MenuOverlay({ highScore, soundEnabled, onToggleSound }: Props) {
+export function MenuOverlay({
+  highScore,
+  soundEnabled,
+  viewMode,
+  onToggleSound,
+  onToggleViewMode,
+}: Props) {
   const [konamiMsg, setKonamiMsg] = useState('');
   const [characterId, setCharacterId] = useState(Storage.getSelectedCharacter());
   const secretUnlocked = EasterEggs.isSecretLevelUnlocked();
@@ -127,6 +136,16 @@ export function MenuOverlay({ highScore, soundEnabled, onToggleSound }: Props) {
                 }}
               >
                 {soundEnabled ? '🔊 Sound ON' : '🔇 Sound OFF'}
+              </button>
+              <button
+                type="button"
+                className={`btn-wood${viewMode === 'arcade' ? ' btn-wood--active' : ''}`}
+                onClick={() => {
+                  UISounds.click();
+                  onToggleViewMode();
+                }}
+              >
+                {viewMode === 'arcade' ? '🕹 Arcade Mode ON' : '🕹 Arcade Mode OFF'}
               </button>
             </div>
           </div>

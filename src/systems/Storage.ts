@@ -5,6 +5,9 @@ const COMPLETED_LEVELS_KEY = 'eashans-quest-completed';
 const SOUND_ENABLED_KEY = 'eashans-quest-sound';
 const SECRET_UNLOCKED_KEY = 'eashans-quest-secret';
 const CHARACTER_KEY = 'eashans-quest-character';
+const VIEW_MODE_KEY = 'eashans-quest-view-mode';
+
+export type ViewMode = 'fullscreen' | 'arcade';
 
 export const Storage = {
   getHighScore(): number {
@@ -95,6 +98,23 @@ export const Storage = {
   setSelectedCharacter(characterId: string): void {
     try {
       localStorage.setItem(CHARACTER_KEY, characterId);
+    } catch {
+      /* ignore */
+    }
+  },
+
+  getViewMode(): ViewMode {
+    try {
+      const stored = localStorage.getItem(VIEW_MODE_KEY);
+      return stored === 'arcade' ? 'arcade' : 'fullscreen';
+    } catch {
+      return 'fullscreen';
+    }
+  },
+
+  setViewMode(mode: ViewMode): void {
+    try {
+      localStorage.setItem(VIEW_MODE_KEY, mode);
     } catch {
       /* ignore */
     }

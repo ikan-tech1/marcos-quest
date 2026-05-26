@@ -190,22 +190,22 @@ export class GameScene extends Phaser.Scene {
     );
 
     this.parallaxMountains = this.add
-      .image(0, GAME_HEIGHT - 280, 'bg-mountains')
-      .setOrigin(0)
-      .setScrollFactor(0.15)
-      .setAlpha(theme === 'sky' ? 0.3 : 0.7);
+      .image(0, GAME_HEIGHT - 200, 'bg-mountains')
+      .setOrigin(0, 1)
+      .setScrollFactor(0.12)
+      .setAlpha(theme === 'sky' ? 0.35 : 0.75);
 
     this.parallaxClouds = this.add
-      .image(0, 40, 'bg-clouds')
+      .image(0, 24, 'bg-clouds')
       .setOrigin(0)
-      .setScrollFactor(0.25)
-      .setAlpha(theme === 'underground' || theme === 'castle' ? 0.2 : 1);
+      .setScrollFactor(0.2)
+      .setAlpha(theme === 'underground' || theme === 'castle' ? 0.15 : 1);
 
     this.parallaxHills = this.add
-      .image(0, 380, 'bg-hills')
-      .setOrigin(0)
-      .setScrollFactor(0.45)
-      .setAlpha(theme === 'underground' ? 0.3 : 0.8);
+      .image(0, GAME_HEIGHT - 8, 'bg-hills')
+      .setOrigin(0, 1)
+      .setScrollFactor(0.38)
+      .setAlpha(theme === 'underground' ? 0.25 : 0.9);
 
     this.cameras.main.setBackgroundColor(skyColor);
   }
