@@ -769,8 +769,8 @@ body {
 .screen-enter--2 { animation-delay: 0.12s; }
 .screen-enter--3 { animation-delay: 0.2s; }
 .screen-enter--4 { animation-delay: 0.28s; }
-.screen-enter--5 { animation-delay: 0.38s; }
-.screen-enter--6 { animation-delay: 0.48s; }
+.screen-enter--5 { animation-delay: 0.42s; }
+.screen-enter--6 { animation-delay: 0.52s; }
 
 /* ─── Overlays ─── */
 
@@ -978,6 +978,42 @@ body {
   text-shadow: 2px 2px 0 rgba(0, 0, 0, 0.4);
 }
 
+.menu-press-start--on-sign {
+  position: relative;
+  margin: 0 0 14px;
+  padding: 8px 10px 10px;
+  text-align: center;
+  line-height: 1.6;
+  animation: press-start-pulse 2.4s ease-in-out infinite;
+}
+
+.menu-press-start-glow {
+  position: absolute;
+  inset: -4px 8px;
+  border-radius: 4px;
+  background: radial-gradient(ellipse at 50% 50%, rgba(255, 215, 0, 0.22) 0%, transparent 70%);
+  pointer-events: none;
+  animation: press-start-glow 2.4s ease-in-out infinite;
+}
+
+@keyframes press-start-pulse {
+  0%, 100% {
+    opacity: 1;
+    transform: translateY(0);
+    filter: brightness(1);
+  }
+  50% {
+    opacity: 0.82;
+    transform: translateY(-2px);
+    filter: brightness(1.2);
+  }
+}
+
+@keyframes press-start-glow {
+  0%, 100% { opacity: 0.5; }
+  50% { opacity: 1; }
+}
+
 .blink {
   animation: blink-text 1.2s step-end infinite;
 }
@@ -1084,24 +1120,78 @@ body {
 .controls-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 8px 20px;
-  margin-top: 8px;
-  font-size: 0.75rem;
-  color: rgba(255, 248, 231, 0.85);
+  gap: 10px 16px;
+  margin-top: 4px;
   text-align: left;
 }
 
-.controls-grid kbd {
-  display: inline-block;
-  padding: 2px 7px;
-  background: rgba(0, 0, 0, 0.25);
-  border: 2px solid rgba(255, 248, 231, 0.35);
-  border-bottom-width: 3px;
-  border-radius: 4px;
+.control-cell {
+  display: grid;
+  grid-template-columns: 1.1rem 1fr;
+  grid-template-rows: auto auto;
+  column-gap: 8px;
+  row-gap: 4px;
+  align-items: center;
+  min-height: 2.75rem;
+}
+
+.control-icon {
+  grid-row: 1 / -1;
   font-family: 'Press Start 2P', monospace;
-  font-size: 0.45rem;
+  font-size: 0.42rem;
+  color: var(--accent-gold);
+  text-shadow: 1px 1px 0 rgba(0, 0, 0, 0.5);
+  line-height: 1;
+  justify-self: center;
+}
+
+.control-keys {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+  min-height: 1.35rem;
+}
+
+.control-keys-sep {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 0.35rem;
+  color: rgba(255, 248, 231, 0.45);
+  line-height: 1;
+}
+
+.control-label {
+  grid-column: 2;
+  font-family: 'Press Start 2P', monospace;
+  font-size: 0.38rem;
+  color: rgba(255, 248, 231, 0.92);
+  letter-spacing: 0.04em;
+  text-shadow: 1px 1px 0 rgba(0, 0, 0, 0.45);
+}
+
+.kbd-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.6rem;
+  padding: 4px 6px;
+  background:
+    linear-gradient(180deg, #5d4037 0%, #3e2723 55%, #2a1810 100%);
+  border: 2px solid #1a1008;
+  border-bottom-width: 3px;
+  border-radius: 3px;
+  font-family: 'Press Start 2P', monospace;
+  font-size: 0.35rem;
+  line-height: 1.2;
   color: #fff8e7;
-  margin-right: 4px;
+  text-shadow: 1px 1px 0 rgba(0, 0, 0, 0.6);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 248, 231, 0.18),
+    0 2px 0 rgba(0, 0, 0, 0.35);
+}
+
+.kbd-chip:only-child {
+  min-width: 2rem;
 }
 
 .feature-pills {
@@ -1757,15 +1847,120 @@ body {
 }
 
 .controls-sign {
-  width: min(420px, 88vw);
+  width: min(440px, 92vw);
+  margin-top: 4px;
+}
+
+.wood-sign--hanging {
+  padding-top: 18px;
+}
+
+.wood-sign--hanging .wood-sign-post {
+  bottom: -28px;
+  height: 56px;
+  width: 12px;
+  background:
+    linear-gradient(90deg, #2a1810 0%, #5d4037 35%, #8d6e63 50%, #5d4037 65%, #2a1810 100%);
+  box-shadow:
+    inset 1px 0 0 rgba(255, 248, 231, 0.12),
+    2px 0 4px rgba(0, 0, 0, 0.35);
+}
+
+.wood-sign--hanging .wood-sign-post--left { left: 14%; }
+.wood-sign--hanging .wood-sign-post--right { right: 14%; }
+
+.wood-sign-rope {
+  position: absolute;
+  top: 0;
+  width: 3px;
+  height: 22px;
+  background: linear-gradient(180deg, #8d6e63, #5d4037 60%, #3e2723);
+  border-radius: 2px;
+  z-index: 2;
+  box-shadow: 1px 0 2px rgba(0, 0, 0, 0.35);
+}
+
+.wood-sign-rope--left { left: calc(14% + 4px); }
+.wood-sign-rope--right { right: calc(14% + 4px); }
+
+.wood-sign-board--controls {
+  padding: 18px 22px 20px;
+  text-align: center;
+  border: 3px solid #5d4037;
+  outline: 2px solid var(--coin-dark);
+  outline-offset: -1px;
+  background:
+    radial-gradient(ellipse 120% 80% at 20% 10%, rgba(255, 248, 231, 0.08) 0%, transparent 50%),
+    radial-gradient(ellipse 100% 60% at 85% 90%, rgba(0, 0, 0, 0.12) 0%, transparent 45%),
+    repeating-linear-gradient(
+      0deg,
+      transparent 0px,
+      transparent 11px,
+      rgba(42, 24, 16, 0.14) 11px,
+      rgba(42, 24, 16, 0.14) 12px
+    ),
+    repeating-linear-gradient(
+      90deg,
+      transparent 0px,
+      transparent 28px,
+      rgba(0, 0, 0, 0.04) 28px,
+      rgba(0, 0, 0, 0.04) 29px
+    ),
+    linear-gradient(175deg, #a1887f 0%, var(--wood-light) 18%, var(--wood-mid) 52%, var(--wood-dark) 100%);
+  box-shadow:
+    inset 0 2px 0 rgba(255, 248, 231, 0.28),
+    inset 0 -6px 12px rgba(0, 0, 0, 0.28),
+    inset 4px 0 8px rgba(0, 0, 0, 0.08),
+    inset -4px 0 8px rgba(0, 0, 0, 0.08),
+    0 0 0 2px rgba(255, 215, 0, 0.35),
+    0 8px 0 #2a1810,
+    0 14px 36px rgba(0, 0, 0, 0.4);
+}
+
+.wood-sign-board--controls::before,
+.wood-sign-board--controls::after {
+  content: '';
+  position: absolute;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 35%, #8d8d8d, #4a4a4a 55%, #2a1810);
+  border: 1px solid #1a1008;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.25);
+}
+
+.wood-sign-board--controls::before {
+  top: 10px;
+  left: 10px;
+}
+
+.wood-sign-board--controls::after {
+  top: 10px;
+  right: 10px;
 }
 
 .controls-sign-title {
   font-family: 'Press Start 2P', monospace;
-  font-size: 0.45rem;
+  font-size: 0.48rem;
   color: var(--accent-gold);
-  margin-bottom: 10px;
-  text-shadow: 1px 1px 0 rgba(0, 0, 0, 0.4);
+  margin: 0 0 12px;
+  padding-bottom: 10px;
+  letter-spacing: 0.12em;
+  text-shadow:
+    2px 2px 0 rgba(0, 0, 0, 0.5),
+    0 0 12px rgba(255, 215, 0, 0.25);
+  border-bottom: 2px solid rgba(184, 134, 11, 0.45);
+}
+
+@media (max-width: 480px) {
+  .controls-grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .control-cell {
+    min-height: auto;
+  }
 }
 
 /* ─── HUD (in-world planks) ─── */

@@ -151,19 +151,86 @@ export function MenuOverlay({
           </div>
         </div>
 
-        <p className="menu-press-start blink screen-enter screen-enter--5">▶ Press Start to Enter the World ◀</p>
-
-        <div className="controls-sign wood-sign screen-enter screen-enter--6">
-          <div className="wood-sign-board wood-sign-board--compact">
+        <div className="controls-sign wood-sign wood-sign--hanging screen-enter screen-enter--5">
+          <div className="wood-sign-rope wood-sign-rope--left" aria-hidden="true" />
+          <div className="wood-sign-rope wood-sign-rope--right" aria-hidden="true" />
+          <div className="wood-sign-post wood-sign-post--left" aria-hidden="true" />
+          <div className="wood-sign-post wood-sign-post--right" aria-hidden="true" />
+          <div className="wood-sign-board wood-sign-board--controls">
+            <p className="menu-press-start menu-press-start--on-sign">
+              <span className="menu-press-start-glow" aria-hidden="true" />
+              ▶ Press Start to Enter the World ◀
+            </p>
             <p className="controls-sign-title">CONTROLS</p>
-            <div className="controls-grid">
-              <div><kbd>←→</kbd> / <kbd>A D</kbd> Move</div>
-              <div><kbd>Space</kbd> / <kbd>W</kbd> Jump ×2</div>
-              <div><kbd>↓</kbd> / <kbd>S</kbd> Enter pipes</div>
-              <div><kbd>Shift</kbd> / <kbd>K</kbd> Dash</div>
-              <div><kbd>Z</kbd> / <kbd>J</kbd> Fire</div>
-              <div><kbd>Esc</kbd> / <kbd>P</kbd> Pause</div>
-              <div><kbd>F</kbd> Fullscreen</div>
+            <div className="controls-grid" role="list">
+              <div className="control-cell" role="listitem">
+                <span className="control-icon" aria-hidden="true">⇄</span>
+                <div className="control-keys">
+                  <kbd className="kbd-chip">←→</kbd>
+                  <span className="control-keys-sep">/</span>
+                  <kbd className="kbd-chip">A D</kbd>
+                </div>
+                <span className="control-label">Move</span>
+              </div>
+              <div className="control-cell" role="listitem">
+                <span className="control-icon" aria-hidden="true">↑</span>
+                <div className="control-keys">
+                  <kbd className="kbd-chip">Space</kbd>
+                  <span className="control-keys-sep">/</span>
+                  <kbd className="kbd-chip">W</kbd>
+                </div>
+                <span className="control-label">Jump ×2</span>
+              </div>
+              <div className="control-cell" role="listitem">
+                <span className="control-icon" aria-hidden="true">★</span>
+                <div className="control-keys">
+                  <kbd className="kbd-chip">Shift</kbd>
+                  <span className="control-keys-sep">/</span>
+                  <kbd className="kbd-chip">K</kbd>
+                </div>
+                <span className="control-label">Dash</span>
+              </div>
+              <div className="control-cell" role="listitem">
+                <span className="control-icon" aria-hidden="true">●</span>
+                <div className="control-keys">
+                  <kbd className="kbd-chip">Z</kbd>
+                  <span className="control-keys-sep">/</span>
+                  <kbd className="kbd-chip">J</kbd>
+                </div>
+                <span className="control-label">Fire</span>
+              </div>
+              <div className="control-cell" role="listitem">
+                <span className="control-icon" aria-hidden="true">↓</span>
+                <div className="control-keys">
+                  <kbd className="kbd-chip">↓</kbd>
+                  <span className="control-keys-sep">/</span>
+                  <kbd className="kbd-chip">S</kbd>
+                </div>
+                <span className="control-label">Pipes</span>
+              </div>
+              <div className="control-cell" role="listitem">
+                <span className="control-icon" aria-hidden="true">‖</span>
+                <div className="control-keys">
+                  <kbd className="kbd-chip">Esc</kbd>
+                  <span className="control-keys-sep">/</span>
+                  <kbd className="kbd-chip">P</kbd>
+                </div>
+                <span className="control-label">Pause</span>
+              </div>
+              <div className="control-cell" role="listitem">
+                <span className="control-icon" aria-hidden="true">▣</span>
+                <div className="control-keys">
+                  <kbd className="kbd-chip">F</kbd>
+                </div>
+                <span className="control-label">Fullscreen</span>
+              </div>
+              <div className="control-cell" role="listitem">
+                <span className="control-icon" aria-hidden="true">▶</span>
+                <div className="control-keys">
+                  <kbd className="kbd-chip">Enter</kbd>
+                </div>
+                <span className="control-label">Start</span>
+              </div>
             </div>
           </div>
         </div>
