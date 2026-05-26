@@ -78,138 +78,175 @@ const BLAZE_PALETTES: Record<string, CharColors> = {
 
 type Pose = 'idle' | 'run1' | 'run2' | 'run3';
 
+function px(
+  g: Phaser.GameObjects.Graphics,
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+  color: number,
+  alpha = 1,
+): void {
+  g.fillStyle(color, alpha);
+  g.fillRect(x, y, w, h);
+}
+
+function runOffsets(pose: Pose): { lLeg: number; rLeg: number; lArm: number; rArm: number; bounce: number } {
+  switch (pose) {
+    case 'run1':
+      return { lLeg: -2, rLeg: 2, lArm: 2, rArm: -2, bounce: -1 };
+    case 'run2':
+      return { lLeg: 0, rLeg: 0, lArm: 0, rArm: 0, bounce: -2 };
+    case 'run3':
+      return { lLeg: 2, rLeg: -2, lArm: -2, rArm: 2, bounce: -1 };
+    default:
+      return { lLeg: 0, rLeg: 0, lArm: 0, rArm: 0, bounce: 0 };
+  }
+}
+
 function drawEashan(g: Phaser.GameObjects.Graphics, c: CharColors, big: boolean, pose: Pose): void {
   const h = big ? 48 : 28;
-  // Cap brim
-  g.fillStyle(c.headShade, 1);
-  g.fillRect(2, big ? 8 : 6, 20, 3);
-  // Cap
-  g.fillStyle(c.head, 1);
-  g.fillRect(4, 0, 16, big ? 10 : 8);
-  g.fillStyle(c.headShade, 1);
-  g.fillRect(4, 0, 4, big ? 6 : 5);
+  const { lLeg, rLeg, lArm, rArm, bounce } = runOffsets(pose);
+  const y0 = big ? 0 : 0;
+  const capH = big ? 11 : 9;
+
+  // Cap brim + dome (kingdom hero)
+  px(g, 1, y0 + capH - 2 + bounce, 22, 3, c.headShade);
+  px(g, 3, y0 + 1 + bounce, 18, capH - 2, c.head);
+  px(g, 3, y0 + 1 + bounce, 5, capH - 3, c.headShade);
+  px(g, 10, y0 + 3 + bounce, 6, 4, 0xffffff);
+  px(g, 11, y0 + 4 + bounce, 4, 2, c.head);
+
   // Face
-  g.fillStyle(c.skin, 1);
-  g.fillRect(6, big ? 6 : 5, 12, big ? 6 : 5);
-  g.fillStyle(c.eye, 1);
-  g.fillRect(8, big ? 8 : 7, 2, 2);
-  g.fillRect(14, big ? 8 : 7, 2, 2);
-  // Overalls
-  g.fillStyle(c.body, 1);
-  g.fillRect(4, big ? 12 : 10, 16, big ? 20 : 10);
-  g.fillStyle(c.bodyShade, 1);
-  g.fillRect(4, big ? 12 : 10, 4, big ? 20 : 10);
-  g.fillRect(16, big ? 12 : 10, 4, big ? 20 : 10);
-  g.fillStyle(c.accent, 1);
-  g.fillRect(10, big ? 14 : 11, 4, big ? 6 : 4);
-  // Boots — 3-frame run cycle
-  const lFoot = pose === 'run1' ? 0 : pose === 'run2' ? 2 : pose === 'run3' ? 1 : 0;
-  const rFoot = pose === 'run1' ? 2 : pose === 'run2' ? 0 : pose === 'run3' ? 1 : 0;
-  const bounce = pose === 'run3' ? -3 : pose === 'run1' || pose === 'run2' ? -1 : 0;
-  g.fillStyle(c.boots, 1);
-  g.fillRect(5 + lFoot, h - 6 + bounce, 5, 6);
-  g.fillRect(14 - rFoot, h - 6 + bounce, 5, 6);
-  g.fillStyle(c.bootsShade, 1);
-  g.fillRect(5 + lFoot, h - 2, 5, 2);
-  g.fillRect(14 - rFoot, h - 2, 5, 2);
+  px(g, 7, y0 + (big ? 7 : 6) + bounce, 10, big ? 7 : 5, c.skin);
+  px(g, 7, y0 + (big ? 7 : 6) + bounce, 10, 2, c.skin, 0.85);
+  px(g, 9, y0 + (big ? 9 : 8) + bounce, 2, 2, c.eye);
+  px(g, 14, y0 + (big ? 9 : 8) + bounce, 2, 2, c.eye);
+  px(g, 10, y0 + (big ? 12 : 10) + bounce, 4, 1, 0xc0392b);
+
+  // Overalls + straps
+  const bodyY = y0 + (big ? 14 : 11) + bounce;
+  const bodyH = big ? 22 : 11;
+  px(g, 5, bodyY, 14, bodyH, c.body);
+  px(g, 5, bodyY, 3, bodyH, c.bodyShade);
+  px(g, 16, bodyY, 3, bodyH, c.bodyShade);
+  px(g, 7, bodyY - (big ? 4 : 3), 2, big ? 6 : 4, c.bodyShade);
+  px(g, 15, bodyY - (big ? 4 : 3), 2, big ? 6 : 4, c.bodyShade);
+  px(g, 10, bodyY + 1, 4, big ? 7 : 4, c.accent);
+  px(g, 11, bodyY + (big ? 3 : 2), 2, big ? 3 : 2, c.bodyShade);
+
+  // Arms
+  px(g, 3 + lArm, bodyY + 2, 3, big ? 8 : 5, c.body);
+  px(g, 16 + rArm, bodyY + 2, 3, big ? 8 : 5, c.body);
+
+  // Boots
+  const footY = h - 6 + bounce;
+  px(g, 6 + lLeg, footY, 5, 6, c.boots);
+  px(g, 6 + lLeg, footY + 4, 5, 2, c.bootsShade);
+  px(g, 14 + rLeg, footY, 5, 6, c.boots);
+  px(g, 14 + rLeg, footY + 4, 5, 2, c.bootsShade);
 }
 
 function drawLuna(g: Phaser.GameObjects.Graphics, c: CharColors, big: boolean, pose: Pose): void {
   const h = big ? 48 : 28;
-  // Flowing hair / ponytail
-  g.fillStyle(c.head, 1);
-  g.fillRect(3, 0, 18, big ? 9 : 7);
-  g.fillRect(18, 2, 4, big ? 14 : 8);
-  g.fillStyle(c.headShade, 1);
-  g.fillRect(3, 0, 6, big ? 9 : 7);
+  const { lLeg, rLeg, bounce } = runOffsets(pose);
+  const capH = big ? 10 : 8;
+
+  // Hair + ponytail
+  px(g, 4, 1 + bounce, 16, capH, c.head);
+  px(g, 4, 1 + bounce, 5, capH, c.headShade);
+  px(g, 18, 3 + bounce, 4, big ? 14 : 9, c.head);
+  px(g, 19, 4 + bounce, 2, big ? 12 : 7, c.headShade);
+
   // Headband
-  g.fillStyle(c.accent, 1);
-  g.fillRect(4, big ? 5 : 4, 16, 2);
+  px(g, 4, (big ? 6 : 5) + bounce, 16, 2, c.accent);
+  px(g, 5, (big ? 6 : 5) + bounce, 14, 1, 0xffffff, 0.35);
+
   // Face
-  g.fillStyle(c.skin, 1);
-  g.fillRect(6, big ? 6 : 5, 12, big ? 5 : 4);
-  g.fillStyle(c.eye, 1);
-  g.fillRect(8, big ? 7 : 6, 2, 2);
-  g.fillRect(14, big ? 7 : 6, 2, 2);
+  px(g, 7, (big ? 7 : 6) + bounce, 10, big ? 6 : 5, c.skin);
+  px(g, 9, (big ? 9 : 8) + bounce, 2, 2, c.eye);
+  px(g, 14, (big ? 9 : 8) + bounce, 2, 2, c.eye);
+
   // Sleek suit
-  g.fillStyle(c.body, 1);
-  g.fillRect(5, big ? 11 : 9, 14, big ? 21 : 11);
-  g.fillStyle(c.bodyShade, 1);
-  g.fillRect(5, big ? 11 : 9, 3, big ? 21 : 11);
-  g.fillStyle(c.accent, 1);
-  g.fillRect(11, big ? 13 : 10, 2, big ? 16 : 8);
-  // Speed stripes
-  g.fillStyle(c.accent, 0.6);
-  g.fillRect(7, big ? 18 : 14, 10, 1);
-  // Boots
-  const lOff = pose === 'run1' ? -1 : pose === 'run2' ? 1 : 0;
-  const rOff = pose === 'run1' ? 1 : pose === 'run2' ? -1 : 0;
-  g.fillStyle(c.boots, 1);
-  g.fillRect(6 + lOff, h - 5 + (pose === 'run2' ? -2 : 0), 4, 5);
-  g.fillRect(14 + rOff, h - 5 + (pose === 'run1' ? -2 : 0), 4, 5);
+  const bodyY = (big ? 13 : 11) + bounce;
+  const bodyH = big ? 21 : 11;
+  px(g, 6, bodyY, 12, bodyH, c.body);
+  px(g, 6, bodyY, 2, bodyH, c.bodyShade);
+  px(g, 16, bodyY, 2, bodyH, c.bodyShade);
+  px(g, 11, bodyY + 1, 2, bodyH - 2, c.accent);
+  px(g, 8, bodyY + (big ? 8 : 5), 8, 1, c.accent, 0.55);
+  px(g, 8, bodyY + (big ? 14 : 8), 8, 1, c.accent, 0.55);
+
+  // Boots (sprinter)
+  px(g, 7 + lLeg, h - 5 + bounce, 4, 5, c.boots);
+  px(g, 7 + lLeg, h - 2, 4, 2, c.bootsShade);
+  px(g, 14 + rLeg, h - 5 + bounce, 4, 5, c.boots);
+  px(g, 14 + rLeg, h - 2, 4, 2, c.bootsShade);
 }
 
 function drawRex(g: Phaser.GameObjects.Graphics, c: CharColors, big: boolean, pose: Pose): void {
   const h = big ? 48 : 28;
+  const { lLeg, rLeg, bounce } = runOffsets(pose);
+
   // Helmet
-  g.fillStyle(c.head, 1);
-  g.fillRect(2, 0, 20, big ? 11 : 9);
-  g.fillStyle(c.headShade, 1);
-  g.fillRect(2, 0, 20, 3);
-  g.fillRect(2, 0, 4, big ? 11 : 9);
-  // Visor
-  g.fillStyle(c.accent, 1);
-  g.fillRect(5, big ? 5 : 4, 14, big ? 4 : 3);
-  g.fillStyle(c.skin, 1);
-  g.fillRect(7, big ? 6 : 5, 4, 2);
-  g.fillRect(13, big ? 6 : 5, 4, 2);
-  // Broad shoulders + armor
-  g.fillStyle(c.body, 1);
-  g.fillRect(2, big ? 11 : 9, 20, big ? 21 : 11);
-  g.fillStyle(c.bodyShade, 1);
-  g.fillRect(2, big ? 11 : 9, 4, big ? 21 : 11);
-  g.fillRect(18, big ? 11 : 9, 4, big ? 21 : 11);
-  g.fillStyle(c.accent, 1);
-  g.fillRect(8, big ? 14 : 11, 8, big ? 8 : 5);
+  px(g, 2, 1 + bounce, 20, big ? 12 : 10, c.head);
+  px(g, 2, 1 + bounce, 20, 3, c.headShade);
+  px(g, 2, 1 + bounce, 4, big ? 12 : 10, c.headShade);
+  px(g, 5, (big ? 6 : 5) + bounce, 14, big ? 4 : 3, c.accent);
+  px(g, 6, (big ? 7 : 6) + bounce, 5, 2, 0xffffff, 0.45);
+  px(g, 13, (big ? 7 : 6) + bounce, 5, 2, 0xffffff, 0.45);
+
+  // Shoulder armor
+  const bodyY = (big ? 12 : 10) + bounce;
+  const bodyH = big ? 22 : 12;
+  px(g, 1, bodyY, 22, bodyH, c.body);
+  px(g, 1, bodyY, 5, bodyH, c.bodyShade);
+  px(g, 18, bodyY, 5, bodyH, c.bodyShade);
+  px(g, 1, bodyY, 6, 4, c.bodyShade);
+  px(g, 17, bodyY, 6, 4, c.bodyShade);
+  px(g, 8, bodyY + 2, 8, big ? 9 : 6, c.accent);
+  px(g, 9, bodyY + 3, 6, big ? 7 : 4, c.bodyShade);
+
   // Heavy boots
-  g.fillStyle(c.boots, 1);
-  g.fillRect(4 + (pose === 'run1' ? 0 : 0), h - 7 + (pose === 'run2' ? -1 : 0), 7, 7);
-  g.fillRect(13 + (pose === 'run2' ? 0 : 0), h - 7 + (pose === 'run1' ? -1 : 0), 7, 7);
-  g.fillStyle(c.bootsShade, 1);
-  g.fillRect(4, h - 2, 7, 2);
-  g.fillRect(13, h - 2, 7, 2);
+  px(g, 4 + lLeg, h - 7 + bounce, 7, 7, c.boots);
+  px(g, 4 + lLeg, h - 2, 7, 2, c.bootsShade);
+  px(g, 13 + rLeg, h - 7 + bounce, 7, 7, c.boots);
+  px(g, 13 + rLeg, h - 2, 7, 2, c.bootsShade);
 }
 
 function drawZap(g: Phaser.GameObjects.Graphics, c: CharColors, big: boolean, pose: Pose): void {
   const h = big ? 48 : 28;
+  const { lLeg, rLeg, bounce } = runOffsets(pose);
+
   // Spiky hair
+  px(g, 6, (big ? 4 : 3) + bounce, 12, big ? 6 : 5, c.head);
+  px(g, 6, (big ? 4 : 3) + bounce, 4, big ? 6 : 5, c.headShade);
   g.fillStyle(c.head, 1);
-  g.fillRect(5, 2, 14, big ? 7 : 5);
-  g.fillTriangle(5, 2, 7, 0, 9, 2);
-  g.fillTriangle(9, 1, 12, 0, 14, 2);
-  g.fillTriangle(14, 2, 17, 0, 19, 3);
-  g.fillStyle(c.headShade, 1);
-  g.fillRect(5, 2, 4, big ? 7 : 5);
+  g.fillTriangle(6, 2 + bounce, 8, 0 + bounce, 10, 3 + bounce);
+  g.fillTriangle(10, 1 + bounce, 13, 0 + bounce, 15, 3 + bounce);
+  g.fillTriangle(14, 2 + bounce, 17, 0 + bounce, 18, 4 + bounce);
+  px(g, 11, 1 + bounce, 2, 2, c.accent);
+
   // Face
-  g.fillStyle(c.skin, 1);
-  g.fillRect(7, big ? 7 : 6, 10, big ? 5 : 4);
-  g.fillStyle(c.eye, 1);
-  g.fillRect(9, big ? 8 : 7, 2, 2);
-  g.fillRect(14, big ? 8 : 7, 2, 2);
+  px(g, 7, (big ? 8 : 7) + bounce, 10, big ? 5 : 4, c.skin);
+  px(g, 9, (big ? 9 : 8) + bounce, 2, 2, c.eye);
+  px(g, 14, (big ? 9 : 8) + bounce, 2, 2, c.eye);
+
   // Slim suit + lightning bolt
-  g.fillStyle(c.body, 1);
-  g.fillRect(6, big ? 12 : 10, 12, big ? 20 : 10);
-  g.fillStyle(c.bodyShade, 1);
-  g.fillRect(6, big ? 12 : 10, 2, big ? 20 : 10);
-  g.fillStyle(c.accent, 1);
-  g.fillRect(11, big ? 14 : 11, 2, 3);
-  g.fillRect(9, big ? 17 : 14, 6, 2);
-  g.fillRect(11, big ? 19 : 16, 2, 3);
-  // Electric glow on blaze handled by palette
+  const bodyY = (big ? 13 : 11) + bounce;
+  const bodyH = big ? 21 : 11;
+  px(g, 7, bodyY, 10, bodyH, c.body);
+  px(g, 7, bodyY, 2, bodyH, c.bodyShade);
+  px(g, 11, bodyY + 1, 2, 3, c.accent);
+  px(g, 9, bodyY + 4, 6, 2, c.accent);
+  px(g, 11, bodyY + 6, 2, 3, c.accent);
+  px(g, 15, bodyY, 2, bodyH, c.bodyShade);
+
   // Slim boots
-  g.fillStyle(c.boots, 1);
-  g.fillRect(7 + (pose === 'run1' ? -1 : pose === 'run2' ? 1 : 0), h - 5 + (pose === 'run2' ? -2 : 0), 4, 5);
-  g.fillRect(13 + (pose === 'run2' ? -1 : pose === 'run1' ? 1 : 0), h - 5 + (pose === 'run1' ? -2 : 0), 4, 5);
+  px(g, 8 + lLeg, h - 5 + bounce, 4, 5, c.boots);
+  px(g, 8 + lLeg, h - 2, 4, 2, c.bootsShade);
+  px(g, 13 + rLeg, h - 5 + bounce, 4, 5, c.boots);
+  px(g, 13 + rLeg, h - 2, 4, 2, c.bootsShade);
 }
 
 const DRAWERS: Record<string, typeof drawEashan> = {
@@ -350,6 +387,60 @@ export function generateTextures(scene: Phaser.Scene): void {
   g.fillStyle(0xffffff, 1);
   g.fillRect(14, 0, 4, 32);
   g.generateTexture('tile-flag', 32, 32);
+  g.clear();
+
+  // Flagpole — pole segment, finial ball, waving flag
+  g.fillStyle(0xb0b0b0, 1);
+  g.fillRect(14, 0, 4, 32);
+  g.fillStyle(0x909090, 1);
+  g.fillRect(15, 2, 2, 28);
+  g.fillStyle(0xd8d8d8, 1);
+  g.fillRect(14, 0, 4, 4);
+  g.generateTexture('flagpole-pole', 32, 32);
+  g.clear();
+
+  g.fillStyle(0xb0b0b0, 1);
+  g.fillRect(12, 8, 8, 24);
+  g.fillStyle(0x909090, 1);
+  g.fillRect(14, 10, 4, 20);
+  g.fillStyle(0xe04040, 1);
+  g.fillRect(16, 12, 14, 10);
+  g.fillStyle(0xc03030, 1);
+  g.fillRect(16, 22, 14, 8);
+  g.fillStyle(0xff6060, 1);
+  g.fillRect(17, 13, 5, 4);
+  g.generateTexture('flagpole-top', 32, 32);
+  g.clear();
+
+  g.fillStyle(0xd4af37, 1);
+  g.fillCircle(8, 8, 7);
+  g.fillStyle(0xffd700, 1);
+  g.fillCircle(8, 8, 5);
+  g.fillStyle(0xfff8dc, 0.5);
+  g.fillCircle(6, 6, 2);
+  g.generateTexture('flagpole-ball', 16, 16);
+  g.clear();
+
+  g.fillStyle(0xe53935, 1);
+  g.fillRect(0, 4, 22, 14);
+  g.fillStyle(0xc62828, 1);
+  g.fillRect(0, 14, 22, 4);
+  g.fillStyle(0xff5252, 1);
+  g.fillRect(2, 6, 8, 5);
+  g.fillStyle(0xffffff, 1);
+  g.fillRect(0, 9, 3, 4);
+  g.generateTexture('flagpole-flag', 24, 20);
+  g.clear();
+
+  g.fillStyle(0x5d4037, 1);
+  g.fillRect(2, 8, 20, 24);
+  g.fillStyle(0x3e2723, 1);
+  g.fillRect(4, 10, 16, 20);
+  g.fillStyle(0x8d6e63, 1);
+  g.fillRect(8, 14, 8, 12);
+  g.fillStyle(0xffecb3, 0.4);
+  g.fillRect(9, 15, 6, 4);
+  g.generateTexture('goal-castle-door', 24, 32);
   g.clear();
 
   // All playable characters

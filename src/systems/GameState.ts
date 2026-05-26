@@ -75,8 +75,10 @@ class GameStateManager {
     this.score += points;
   }
 
-  addFlagBonus(flagY: number, poleTopY: number): number {
-    const heightBonus = Math.max(100, Math.floor((poleTopY - flagY) / 4) * 100);
+  addFlagBonus(touchY: number, poleTopY: number, poleBottomY: number): number {
+    const span = Math.max(1, poleBottomY - poleTopY);
+    const heightRatio = Math.min(1, Math.max(0, (poleBottomY - touchY) / span));
+    const heightBonus = Math.floor(100 + heightRatio * 4900);
     const timeBonus = Math.floor(this.timeLeft) * 50;
     this.flagBonus = heightBonus;
     this.lastLevelBonus = heightBonus + timeBonus;

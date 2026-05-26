@@ -50,6 +50,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
   private runFrame = 0;
   private starTrailTimer = 0;
   private hurtFlashTimer = 0;
+  private flagSequenceActive = false;
 
   playerState: PlayerState = PlayerState.Small;
   fireEnabled = false;
@@ -104,7 +105,16 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
   }
 
   get isInvincible(): boolean {
-    return this.invincibleTimer > 0 || this.starTimer > 0;
+    return this.invincibleTimer > 0 || this.starTimer > 0 || this.flagSequenceActive;
+  }
+
+  setFlagSequenceActive(active: boolean): void {
+    this.flagSequenceActive = active;
+    if (active) {
+      this.setVelocity(0, 0);
+      const body = this.body as Phaser.Physics.Arcade.Body;
+      body.setAllowGravity(false);
+    }
   }
 
   get isStarPowered(): boolean {
@@ -116,7 +126,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
   }
 
   update(_time: number, delta: number): void {
-    if (this.isDead) return;
+    if (this.isDead || this.flagSequenceActive) return;
 
     const body = this.body as Phaser.Physics.Arcade.Body;
     const onFloor = body.blocked.down || body.touching.down;

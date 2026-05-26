@@ -5,6 +5,7 @@ import { Coin } from '../objects/Coin';
 import { Pipe } from '../objects/Pipe';
 import { MovingPlatform } from '../entities/MovingPlatform';
 import { Enemy } from '../entities/Enemy';
+import { Flagpole } from '../objects/Flagpole';
 import type { LevelData } from './levelData';
 import { parseLevelMap, themeGroundTexture } from './levelData';
 
@@ -16,7 +17,7 @@ export interface BuiltLevel {
   blocks: Block[];
   pipes: Pipe[];
   tileSprites: Phaser.GameObjects.Image[];
-  flagPositions: { x: number; y: number }[];
+  flagpole: Flagpole;
 }
 
 export class LevelBuilder {
@@ -35,7 +36,6 @@ export class LevelBuilder {
     const blocks: Block[] = [];
     const pipes: Pipe[] = [];
     const tileSprites: Phaser.GameObjects.Image[] = [];
-    const flagPositions: { x: number; y: number }[] = [];
 
     const blockContentsMap = new Map<string, LevelData['blockContents'][0]['contents']>();
     level.blockContents.forEach((bc) => {
@@ -97,22 +97,13 @@ export class LevelBuilder {
       }
     }
 
-    for (let ty = 0; ty < height; ty++) {
-      const row = level.map[ty];
-      for (let tx = 0; tx < row.length; tx++) {
-        if (row[tx] === 'F') {
-          const { x, y } = Block.worldPos(tx, ty);
-          scene.add.image(x, y, 'tile-flag').setDepth(2);
-          flagPositions.push({ x, y });
-        }
-      }
-    }
+    const flagpole = new Flagpole(scene, level);
 
     level.pipes?.forEach((pipeConfig) => {
       pipes.push(new Pipe(scene, pipeConfig));
     });
 
-    return { width, height, groundLayer, oneWayLayer, blocks, pipes, tileSprites, flagPositions };
+    return { width, height, groundLayer, oneWayLayer, blocks, pipes, tileSprites, flagpole };
   }
 
   static spawnEnemies(scene: Phaser.Scene, level: LevelData): Enemy[] {

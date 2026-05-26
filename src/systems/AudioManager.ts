@@ -107,6 +107,25 @@ export class AudioManager {
     });
   }
 
+  playFlagGrab(): void {
+    this.playTone({ freq: 523, duration: 0.06, volume: 0.12 });
+    this.scene.time.delayedCall(50, () => this.playTone({ freq: 659, duration: 0.08, volume: 0.12 }));
+  }
+
+  playFlagSlide(): void {
+    const steps = 8;
+    for (let i = 0; i < steps; i++) {
+      this.scene.time.delayedCall(i * 45, () =>
+        this.playTone({
+          freq: 880 - i * 55,
+          duration: 0.04,
+          type: 'triangle',
+          volume: 0.06,
+        }),
+      );
+    }
+  }
+
   playSecret(): void {
     [440, 554, 659, 880, 659, 880, 1047].forEach((freq, i) => {
       this.scene.time.delayedCall(i * 80, () => this.playTone({ freq, duration: 0.12, volume: 0.12 }));

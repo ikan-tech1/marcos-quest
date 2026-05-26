@@ -15,6 +15,7 @@ import { Block } from '../objects/Block';
 import { Coin } from '../objects/Coin';
 import { PowerUp } from '../objects/PowerUp';
 import { Pipe } from '../objects/Pipe';
+import type { Flagpole } from '../objects/Flagpole';
 import { InputManager } from '../systems/InputManager';
 import { AudioManager } from '../systems/AudioManager';
 import { GameState } from '../systems/GameState';
@@ -45,6 +46,9 @@ export class GameScene extends Phaser.Scene {
   private parallaxMountains!: Phaser.GameObjects.Image;
   private levelComplete = false;
   private flagSliding = false;
+  private flagpole!: Flagpole;
+  private goalDoor?: Phaser.GameObjects.Image;
+  private flagTouchY = 0;
   private fireCooldown = 0;
   private cameraLookAhead = 0;
   private paused = false;
@@ -92,6 +96,7 @@ export class GameScene extends Phaser.Scene {
     this.applyThemeBackground();
 
     this.builtLevel = LevelBuilder.build(this, this.levelData);
+    this.flagpole = this.builtLevel.flagpole;
     this.blocks = this.builtLevel.blocks;
     this.pipes = this.builtLevel.pipes;
     this.enemies = LevelBuilder.spawnEnemies(this, this.levelData);
@@ -133,7 +138,14 @@ export class GameScene extends Phaser.Scene {
     });
 
     this.physics.add.overlap(this.player, this.enemies, (_p, e) => {
+      if (this.flagSliding) return;
       this.handleEnemyCollision(e as Enemy);
+    });
+
+    this.physics.add.overlap(this.player, this.flagpole.triggerZone, () => {
+      if (!this.levelComplete && !this.flagSliding) {
+        this.startFlagSequence();
+      }
     });
 
     this.physics.add.overlap(this.projectiles, this.enemies, (proj, e) => {
@@ -500,48 +512,158 @@ export class GameScene extends Phaser.Scene {
   }
 
   private checkGoal(): void {
-    const goalX = this.levelData.goalX * TILE_SIZE;
-    if (this.player.x >= goalX - TILE_SIZE && !this.levelComplete) {
-      this.startFlagSlide();
+    const { poleX } = this.flagpole.bounds;
+    if (this.player.x >= poleX - TILE_SIZE * 1.5 && !this.levelComplete && !this.flagSliding) {
+      this.startFlagSequence();
     }
   }
 
-  private startFlagSlide(): void {
+  private startFlagSequence(): void {
+    if (this.levelComplete || this.flagSliding) return;
+
     this.levelComplete = true;
     this.flagSliding = true;
-    this.audio.playFlag();
+    this.flagTouchY = this.player.y;
+    this.player.setFlagSequenceActive(true);
+    this.audio.playFlagGrab();
 
+    const { poleX, poleTopY, poleBottomY } = this.flagpole.bounds;
     const body = this.player.body as Phaser.Physics.Arcade.Body;
     body.setVelocity(0, 0);
-    body.setAllowGravity(false);
 
-    const poleX = this.levelData.goalX * TILE_SIZE - TILE_SIZE / 2;
-    const poleTop = this.builtLevel.flagPositions[0]?.y ?? this.player.y - 200;
-    GameState.addFlagBonus(this.player.y, poleTop);
-
-    this.tweens.add({
-      targets: this.player,
-      x: poleX,
-      duration: 400,
-      ease: 'Quad.easeOut',
-      onComplete: () => {
+    const approach = () => {
+      const needsClimb = this.player.y > poleTopY + 12;
+      if (needsClimb) {
         this.tweens.add({
           targets: this.player,
-          y: this.builtLevel.height * TILE_SIZE - 48,
-          duration: 1000,
-          ease: 'Quad.easeIn',
-          onComplete: () => this.finishLevel(),
+          x: poleX,
+          y: poleTopY,
+          duration: 500,
+          ease: 'Quad.easeOut',
+          onComplete: () => this.runFlagTopPause(poleX, poleTopY, poleBottomY),
         });
+      } else {
+        this.tweens.add({
+          targets: this.player,
+          x: poleX,
+          duration: 280,
+          ease: 'Quad.easeOut',
+          onComplete: () => {
+            if (Math.abs(this.player.y - poleTopY) > 8) {
+              this.tweens.add({
+                targets: this.player,
+                y: poleTopY,
+                duration: 220,
+                ease: 'Quad.easeOut',
+                onComplete: () => this.runFlagTopPause(poleX, poleTopY, poleBottomY),
+              });
+            } else {
+              this.runFlagTopPause(poleX, poleTopY, poleBottomY);
+            }
+          },
+        });
+      }
+    };
+
+    if (Math.abs(this.player.x - poleX) > 6) {
+      this.tweens.add({
+        targets: this.player,
+        x: poleX,
+        duration: 200,
+        ease: 'Quad.easeOut',
+        onComplete: approach,
+      });
+    } else {
+      approach();
+    }
+  }
+
+  private runFlagTopPause(poleX: number, poleTopY: number, poleBottomY: number): void {
+    this.player.setPosition(poleX, poleTopY);
+    this.flagTouchY = poleTopY;
+    GameState.addFlagBonus(this.flagTouchY, poleTopY, poleBottomY);
+    this.syncHud();
+
+    this.time.delayedCall(400, () => {
+      this.audio.playFlag();
+      this.time.delayedCall(350, () => this.runFlagSpin(poleX, poleTopY, poleBottomY));
+    });
+  }
+
+  private runFlagSpin(poleX: number, poleTopY: number, poleBottomY: number): void {
+    const radius = 22;
+    const spinDuration = 650;
+
+    this.tweens.addCounter({
+      from: 0,
+      to: Math.PI * 2,
+      duration: spinDuration,
+      ease: 'Sine.easeInOut',
+      onUpdate: (tween) => {
+        const angle = tween.getValue() ?? 0;
+        this.player.x = poleX + Math.cos(angle) * radius;
+        this.player.y = poleTopY + Math.sin(angle) * 10;
+        this.player.setFlipX(Math.cos(angle) < 0);
+      },
+      onComplete: () => {
+        this.player.setPosition(poleX, poleTopY);
+        this.runFlagSlide(poleX, poleTopY, poleBottomY);
       },
     });
   }
 
+  private runFlagSlide(poleX: number, _poleTopY: number, poleBottomY: number): void {
+    this.audio.playFlagSlide();
+    this.flagpole.startFlagWave();
+
+    const slideDuration = 900;
+    const flagLandY = poleBottomY - 8;
+
+    this.flagpole.slideFlagTo(flagLandY, slideDuration, 'Quad.easeIn');
+
+    this.tweens.add({
+      targets: this.player,
+      y: poleBottomY,
+      duration: slideDuration,
+      ease: 'Quad.easeIn',
+      onUpdate: () => {
+        this.player.x = poleX;
+      },
+      onComplete: () => this.runFlagWalkOff(poleX, poleBottomY),
+    });
+  }
+
+  private runFlagWalkOff(poleX: number, poleBottomY: number): void {
+    this.flagpole.stopFlagWave();
+    this.player.setPosition(poleX, poleBottomY);
+
+    const doorX = poleX + TILE_SIZE * 2.5;
+    this.goalDoor = this.add
+      .image(doorX, poleBottomY + TILE_SIZE / 2, 'goal-castle-door')
+      .setOrigin(0.5, 1)
+      .setDepth(2);
+
+    this.tweens.add({
+      targets: this.player,
+      x: doorX + TILE_SIZE,
+      duration: 600,
+      ease: 'Linear',
+      onStart: () => {
+        this.player.setFlipX(false);
+        this.player.setFlagSequenceActive(false);
+      },
+      onComplete: () => this.finishLevel(),
+    });
+  }
+
   private updateFlagSlide(_delta: number): void {
-    /* tween handles slide */
+    this.syncHud();
   }
 
   private finishLevel(): void {
     this.flagSliding = false;
+    this.goalDoor?.destroy();
+    this.goalDoor = undefined;
     this.audio.playWin();
     this.physics.pause();
     GameBridge.setScreen('level-clear');
@@ -566,6 +688,7 @@ export class GameScene extends Phaser.Scene {
   }
 
   private checkPitDeath(): void {
+    if (this.flagSliding || this.levelComplete) return;
     if (this.player.y > this.builtLevel.height * TILE_SIZE + 64) {
       this.player.die();
     }
@@ -590,9 +713,8 @@ export class GameScene extends Phaser.Scene {
       }
     }
 
-    const goalX = this.levelData.goalX * TILE_SIZE;
-    const poleTop = this.builtLevel.flagPositions[0]?.y ?? 0;
-    if (this.player.x >= goalX - TILE_SIZE * 2 && this.player.y < poleTop + TILE_SIZE) {
+    const { poleX, poleTopY } = this.flagpole.bounds;
+    if (this.player.x >= poleX - TILE_SIZE * 2 && this.player.y < poleTopY + TILE_SIZE) {
       if (EasterEggs.unlock('flag-top')) {
         GameState.addScore(5000);
         this.showSecretToast('Flag top bonus!');
