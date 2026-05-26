@@ -1921,6 +1921,25 @@ body {
 }
 
 /* Compact fullscreen HUD — single slim bar, controls inline */
+.fullscreen-hud-shell {
+  position: fixed;
+  left: 0;
+  right: 0;
+  z-index: 55;
+  pointer-events: none;
+}
+
+.fullscreen-hud-shell .overlay-hud--docked {
+  position: relative;
+  inset: auto;
+  width: 100%;
+  pointer-events: auto;
+}
+
+.app-shell--browser-fullscreen .fullscreen-hud-shell {
+  padding-top: env(safe-area-inset-top, 0px);
+}
+
 .overlay-hud--compact {
   justify-content: flex-start;
 }

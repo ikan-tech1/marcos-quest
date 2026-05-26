@@ -372,6 +372,23 @@ export function App() {
         />
       )}
 
+      {showFullscreenGameplay &&
+        (screen === 'playing' || screen === 'level-clear' || screen === 'paused') && (
+          <div className="fullscreen-hud-shell" style={{ top: layout.hudTop }}>
+            <HUD
+              hud={hud}
+              viewMode={effectiveViewMode}
+              isFullscreen={isFullscreen}
+              compact
+              docked
+              showControls
+              onPause={() => GameBridge.emit('pause-game')}
+              onToggleFullscreen={handleToggleFullscreen}
+              onToggleViewMode={toggleViewMode}
+            />
+          </div>
+        )}
+
       {showGameViewport && (
         <div
           className={`game-viewport${showCabinet ? ' game-viewport--cabinet-window' : ' game-viewport--fullscreen'}`}
@@ -380,18 +397,18 @@ export function App() {
           {showCabinet && (
             <div className="cabinet-crt-scanlines cabinet-crt-scanlines--overlay" aria-hidden="true" />
           )}
-          {(screen === 'playing' || screen === 'level-clear' || screen === 'paused') && (
-            <HUD
-              hud={hud}
-              viewMode={effectiveViewMode}
-              isFullscreen={isFullscreen}
-              compact={!showCabinet}
-              showControls={!showCabinet}
-              onPause={() => GameBridge.emit('pause-game')}
-              onToggleFullscreen={handleToggleFullscreen}
-              onToggleViewMode={toggleViewMode}
-            />
-          )}
+          {showCabinet &&
+            (screen === 'playing' || screen === 'level-clear' || screen === 'paused') && (
+              <HUD
+                hud={hud}
+                viewMode={effectiveViewMode}
+                isFullscreen={isFullscreen}
+                showControls={false}
+                onPause={() => GameBridge.emit('pause-game')}
+                onToggleFullscreen={handleToggleFullscreen}
+                onToggleViewMode={toggleViewMode}
+              />
+            )}
           {screen === 'paused' && (
             <PauseOverlay
               soundEnabled={soundEnabled}

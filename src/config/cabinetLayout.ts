@@ -22,6 +22,7 @@ export interface ViewLayout {
   top: number;
   crtLeft: number;
   crtTop: number;
+  hudTop: number;
   cabinetW: number;
   cabinetH: number;
   cabinetLeft: number;
@@ -74,6 +75,7 @@ export function computeViewLayout(
       top: layout.top,
       crtLeft: layout.left,
       crtTop: layout.top,
+      hudTop: layout.hudTop,
       cabinetW: scaledW,
       cabinetH: scaledH,
       cabinetLeft: layout.left,
@@ -100,6 +102,7 @@ export function computeViewLayout(
     top: crtTop,
     crtLeft,
     crtTop,
+    hudTop: cabinetTop,
     cabinetW,
     cabinetH,
     cabinetLeft,

@@ -7,6 +7,7 @@ interface Props {
   viewMode?: ViewMode;
   isFullscreen?: boolean;
   compact?: boolean;
+  docked?: boolean;
   showControls?: boolean;
   onPause?: () => void;
   onToggleFullscreen?: () => void;
@@ -18,6 +19,7 @@ export function HUD({
   viewMode = 'fullscreen',
   isFullscreen = false,
   compact = false,
+  docked = false,
   showControls = false,
   onPause,
   onToggleFullscreen,
@@ -27,7 +29,7 @@ export function HUD({
 
   if (compact) {
     return (
-      <div className="overlay overlay-hud overlay-hud--compact">
+      <div className={`overlay overlay-hud overlay-hud--compact${docked ? ' overlay-hud--docked' : ''}`}>
         <header className="hud-bar hud-bar--compact">
           <div className="hud-compact-group hud-compact-group--left">
             <span className="hud-compact-stat">
