@@ -25,6 +25,7 @@ import { EasterEggs } from '../systems/EasterEggs';
 import { LEVELS } from '../levels/levelData';
 import { LevelBuilder } from '../levels/LevelBuilder';
 import { screenShake, spawnDebris, spawnSparkle, freezeFrame, spawnComboText, spawnPipeWarp, spawnSpringBurst, spawnFireImpact, squashStretch } from '../utils/effects';
+import { texturesReady } from '../utils/textureLifecycle';
 
 export class GameScene extends Phaser.Scene {
   private inputManager!: InputManager;
@@ -47,7 +48,6 @@ export class GameScene extends Phaser.Scene {
   private levelComplete = false;
   private flagSliding = false;
   private flagpole!: Flagpole;
-  private goalDoor?: Phaser.GameObjects.Image;
   private flagTouchY = 0;
   private fireCooldown = 0;
   private cameraLookAhead = 0;
@@ -66,6 +66,7 @@ export class GameScene extends Phaser.Scene {
     this.levelData = LEVELS[this.levelIndex] ?? LEVELS[0];
     this.levelComplete = false;
     this.flagSliding = false;
+    this.paused = false;
     this.pipeWarping = false;
     this.enemies = [];
     this.coins = [];
@@ -75,10 +76,25 @@ export class GameScene extends Phaser.Scene {
     this.powerUps = [];
     this.movingPlatforms = [];
     this.cameraLookAhead = 0;
+    this.cabinetBonusUsed = false;
     GameState.resetTimer(this.levelData.timeLimit ?? undefined);
   }
 
   create(): void {
+    this.resetRuntimeState();
+
+    if (!texturesReady(this)) {
+      this.failLevelBuild('Game textures are missing — refresh the page or return to the menu');
+      return;
+    }
+
+    if (this.levelIndex < 0 || this.levelIndex >= LEVELS.length) {
+      console.error('[GameScene] level index out of bounds', this.levelIndex);
+      this.levelIndex = 0;
+      this.levelData = LEVELS[0];
+      GameState.currentLevel = 0;
+    }
+
     this.inputManager = new InputManager(this);
     this.audio = new AudioManager(this);
     this.audio.setEnabled(Storage.getSoundEnabled());
@@ -96,7 +112,18 @@ export class GameScene extends Phaser.Scene {
     GameBridge.setScreen('playing');
     this.applyThemeBackground();
 
-    this.builtLevel = LevelBuilder.build(this, this.levelData);
+    try {
+      this.builtLevel = LevelBuilder.build(this, this.levelData);
+      if (!this.validateLevelBuild()) {
+        this.failLevelBuild(`Level "${this.levelData.name}" failed to build`);
+        return;
+      }
+    } catch (error) {
+      console.error('[GameScene] LevelBuilder.build failed', error);
+      this.failLevelBuild(`Level "${this.levelData.name}" failed to build`);
+      return;
+    }
+
     this.flagpole = this.builtLevel.flagpole;
     this.blocks = this.builtLevel.blocks;
     this.pipes = this.builtLevel.pipes;
@@ -180,8 +207,48 @@ export class GameScene extends Phaser.Scene {
     const cam = this.cameras.main;
     cam.setBounds(0, 0, this.builtLevel.width * TILE_SIZE, this.builtLevel.height * TILE_SIZE + 200);
     cam.roundPixels = true;
+    cam.stopFollow();
+    cam.setScroll(0, 0);
     cam.startFollow(this.player, true, 0.12, 0.08);
     cam.setDeadzone(100, 60);
+
+    this.bindSceneEvents();
+    this.physics.world.gravity.y = GRAVITY;
+    this.syncHud();
+  }
+
+  private resetRuntimeState(): void {
+    this.paused = false;
+    this.physics.resume();
+    this.time.timeScale = 1;
+    const cam = this.cameras.main;
+    cam.stopFollow();
+    cam.setScroll(0, 0);
+  }
+
+  private validateLevelBuild(): boolean {
+    const groundCount = this.builtLevel.groundLayer.getLength();
+    const tileCount = this.builtLevel.tileSprites.length;
+    if (groundCount === 0 && tileCount === 0) {
+      console.error('[GameScene] level has no ground or tile sprites', this.levelData.name);
+      return false;
+    }
+    return true;
+  }
+
+  private failLevelBuild(message: string): void {
+    console.error('[GameScene]', message, { levelIndex: this.levelIndex, level: this.levelData?.name });
+    GameBridge.setScreen('menu', { levelError: message });
+    this.scene.stop();
+  }
+
+  private bindSceneEvents(): void {
+    this.events.off('player-died');
+    this.events.off('toggle-pause');
+    this.events.off('resume-game');
+    this.events.off('restart-level');
+    this.events.off('change-character');
+    this.events.off('cabinet-bonus-score');
 
     this.events.on('player-died', () => this.handlePlayerDeath());
     this.events.on('toggle-pause', () => this.togglePause());
@@ -194,8 +261,6 @@ export class GameScene extends Phaser.Scene {
       }
     });
     this.events.on('cabinet-bonus-score', () => this.applyCabinetBonus());
-    this.physics.world.gravity.y = GRAVITY;
-    this.syncHud();
   }
 
   private applyThemeBackground(): void {
@@ -648,7 +713,7 @@ export class GameScene extends Phaser.Scene {
     this.player.setPosition(poleX, poleBottomY);
 
     const doorX = poleX + TILE_SIZE * 2.5;
-    this.goalDoor = this.add
+    this.add
       .image(doorX, poleBottomY + TILE_SIZE / 2, 'goal-castle-door')
       .setOrigin(0.5, 1)
       .setDepth(2);
@@ -672,8 +737,6 @@ export class GameScene extends Phaser.Scene {
 
   private finishLevel(): void {
     this.flagSliding = false;
-    this.goalDoor?.destroy();
-    this.goalDoor = undefined;
     this.audio.playWin();
     this.physics.pause();
     GameBridge.setScreen('level-clear');
@@ -692,6 +755,7 @@ export class GameScene extends Phaser.Scene {
         });
         this.scene.stop();
       } else {
+        this.physics.resume();
         this.scene.restart({ levelIndex: GameState.currentLevel, characterId: this.characterId });
       }
     });
@@ -763,6 +827,8 @@ export class GameScene extends Phaser.Scene {
         });
         this.scene.stop();
       } else {
+        this.paused = false;
+        this.physics.resume();
         this.scene.restart({ levelIndex: this.levelIndex, characterId: this.characterId });
       }
     });

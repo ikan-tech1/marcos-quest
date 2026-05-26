@@ -22,6 +22,7 @@ import { UISounds } from './utils/uiSounds';
 import { useFullscreen } from './hooks/useFullscreen';
 import { computeViewGameScale, computeViewLayout } from './config/cabinetLayout';
 import { getCharacterById } from './config/characters';
+import { attachWebGLRecovery } from './utils/textureLifecycle';
 
 const defaultHud: HudState = {
   score: 0,
@@ -77,6 +78,8 @@ export function App() {
   const [screenVisible, setScreenVisible] = useState(true);
   const [viewport, setViewport] = useState({ w: window.innerWidth, h: window.innerHeight });
   const [arcadeFallbackMsg, setArcadeFallbackMsg] = useState(false);
+  const [levelError, setLevelError] = useState<string | null>(null);
+  const [crtEffect, setCrtEffect] = useState<'jump' | 'dash' | 'fire' | 'no-fire' | 'color-test' | null>(null);
 
   const showGameViewport = GAMEPLAY_SCREENS.includes(screen);
   const showHeroWorld = screen === 'loading' || screen === 'menu';
@@ -107,7 +110,13 @@ export function App() {
     UISounds.setEnabled(Storage.getSoundEnabled());
 
     const unsubScreen = GameBridge.on('screen', (data) => {
-      const payload = data as { screen: GameScreen; data?: unknown };
+      const payload = data as { screen: GameScreen; data?: { levelError?: string } & Record<string, unknown> };
+      const err = payload.data?.levelError;
+      if (typeof err === 'string') {
+        setLevelError(err);
+      } else if (payload.screen === 'playing') {
+        setLevelError(null);
+      }
       transitionTo(payload.screen, payload.data);
     });
 
@@ -142,6 +151,7 @@ export function App() {
     const unsubResume = GameBridge.on('resume-game', () => emitToGameScene('resume-game'));
     const unsubRestart = GameBridge.on('restart-level', () => emitToGameScene('restart-level'));
     const unsubPause = GameBridge.on('pause-game', () => emitToGameScene('toggle-pause'));
+    const unsubCabinetBonus = GameBridge.on('cabinet-bonus-score', () => emitToGameScene('cabinet-bonus-score'));
 
     const unsubSound = GameBridge.on('sound-toggle', (data) => {
       const { enabled } = data as { enabled: boolean };
@@ -174,7 +184,11 @@ export function App() {
       gameRefStatic.current = gameRef.current;
     }
 
+    const game = gameRef.current;
+    const detachWebGL = game ? attachWebGLRecovery(game) : () => {};
+
     return () => {
+      detachWebGL();
       unsubScreen();
       unsubHud();
       unsubStart();
@@ -182,6 +196,7 @@ export function App() {
       unsubResume();
       unsubRestart();
       unsubPause();
+      unsubCabinetBonus();
       unsubSound();
       gameRef.current?.destroy(true);
       gameRef.current = null;
@@ -236,7 +251,7 @@ export function App() {
   useEffect(() => {
     const game = gameRef.current;
     if (!game || !showGameViewport) return;
-    game.scale.setZoom(gameScale);
+    game.scale.setZoom(Math.max(1, gameScale));
   }, [gameScale, showGameViewport, layoutMode]);
 
   const toggleSound = useCallback(() => {
@@ -347,13 +362,15 @@ export function App() {
         className={showGameViewport ? 'game-container--live' : 'game-container--hidden'}
         style={
           showGameViewport
-            ? ({
+            ? {
                 width: scaledW,
                 height: scaledH,
-                left: crtLeft,
                 top: crtTop,
-                '--game-scale': gameScale,
-              } as React.CSSProperties)
+                ...(layoutMode === 'fullscreen'
+                  ? { left: '50%', transform: 'translateX(-50%)' }
+                  : { left: crtLeft }),
+                ['--game-scale' as string]: gameScale,
+              }
             : undefined
         }
       />
@@ -369,6 +386,8 @@ export function App() {
           onToggleBrowserFullscreen={handleToggleFullscreen}
           onToggleViewMode={toggleViewMode}
           onCharacterChange={handleCharacterChange}
+          onCrtFlash={setCrtEffect}
+          onCabinetBonus={() => GameBridge.emit('cabinet-bonus-score')}
         />
       )}
 
@@ -391,13 +410,19 @@ export function App() {
 
       {showGameViewport && (
         <div
-          className={`game-viewport${showCabinet ? ' game-viewport--cabinet-window' : ' game-viewport--fullscreen'}`}
+          className={`game-viewport${showCabinet ? ' game-viewport--cabinet-window' : ' game-viewport--fullscreen'}${crtEffect ? ` game-viewport--crt-${crtEffect}` : ''}`}
           style={{ width: scaledW, height: scaledH, left: crtLeft, top: crtTop }}
         >
           {showCabinet && (
             <>
               <div className="cabinet-crt-vignette cabinet-crt-vignette--overlay" aria-hidden="true" />
-              <div className="cabinet-crt-scanlines cabinet-crt-scanlines--overlay" aria-hidden="true" />
+              <div
+                className={`cabinet-crt-scanlines cabinet-crt-scanlines--overlay${crtEffect === 'color-test' ? ' cabinet-crt-scanlines--color-test' : ''}`}
+                aria-hidden="true"
+              />
+              {crtEffect && crtEffect !== 'color-test' && (
+                <div className={`game-viewport-crt-flash game-viewport-crt-flash--${crtEffect}`} aria-hidden="true" />
+              )}
             </>
           )}
           {screen === 'paused' && (
@@ -423,6 +448,8 @@ export function App() {
             highScore={Storage.getHighScore()}
             soundEnabled={soundEnabled}
             viewMode={viewMode}
+            levelError={levelError}
+            onDismissLevelError={() => setLevelError(null)}
             onToggleSound={toggleSound}
             onToggleViewMode={toggleViewMode}
           />

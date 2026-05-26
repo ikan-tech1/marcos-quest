@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { generateTextures } from '../utils/textures';
+import { ensureGameTextures } from '../utils/textureLifecycle';
 import { GameBridge } from '../systems/GameBridge';
 
 export class PreloadScene extends Phaser.Scene {
@@ -9,9 +9,12 @@ export class PreloadScene extends Phaser.Scene {
 
   create(): void {
     try {
-      generateTextures(this);
+      ensureGameTextures(this);
     } catch (error) {
       console.error('[PreloadScene] texture generation failed', error);
+      GameBridge.setScreen('menu', { levelError: 'Failed to load game graphics. Please refresh the page.' });
+      this.scene.stop();
+      return;
     }
     GameBridge.setScreen('menu');
     this.scene.stop();

@@ -12,6 +12,8 @@ interface Props {
   highScore: number;
   soundEnabled: boolean;
   viewMode: ViewMode;
+  levelError?: string | null;
+  onDismissLevelError?: () => void;
   onToggleSound: () => void;
   onToggleViewMode: () => void;
 }
@@ -20,6 +22,8 @@ export function MenuOverlay({
   highScore,
   soundEnabled,
   viewMode,
+  levelError,
+  onDismissLevelError,
   onToggleSound,
   onToggleViewMode,
 }: Props) {
@@ -51,6 +55,15 @@ export function MenuOverlay({
   return (
     <div className="overlay overlay-menu overlay--fullscreen screen-enter">
       <div className="menu-vignette" aria-hidden="true" />
+
+      {levelError && (
+        <div className="level-error-banner" role="alert">
+          <p>{levelError}</p>
+          <button type="button" className="btn-wood btn-wood--small" onClick={onDismissLevelError}>
+            Dismiss
+          </button>
+        </div>
+      )}
 
       <div className="menu-hero">
         <div className="menu-title-block">
