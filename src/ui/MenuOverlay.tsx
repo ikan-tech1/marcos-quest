@@ -20,7 +20,7 @@ export function MenuOverlay() {
       <div className="menu-panel">
         <p className="menu-hero-tag">Welcome, Eashan!</p>
         <h1 className="title-3d">EASHAN&apos;S QUEST</h1>
-        <p className="subtitle">A Mushroom Kingdom Adventure</p>
+        <p className="subtitle">Jump • Dash • Conquer</p>
 
         <div className="feature-pills">
           <span className="pill pill-green">Double Jump</span>

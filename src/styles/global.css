@@ -29,6 +29,7 @@
   --text-muted: #5a4a3a;
   --portal-frame: #4a3728;
   --portal-gold: #ffd700;
+  --ground-total: 64px;
 }
 
 * {
@@ -55,12 +56,25 @@ body {
   position: relative;
   width: 100%;
   height: 100%;
+  min-height: 100vh;
+  min-height: 100dvh;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   perspective: 1200px;
   overflow: hidden;
+}
+
+.app-shell--playing {
+  perspective: none;
+  justify-content: flex-end;
+  padding-bottom: calc(var(--ground-total) + 6px);
+}
+
+.app-shell--menu {
+  justify-content: center;
+  padding-bottom: var(--ground-total);
 }
 
 .world-sky {
@@ -104,6 +118,14 @@ body {
   z-index: 2;
   pointer-events: none;
   overflow: hidden;
+}
+
+.world-clouds--static {
+  z-index: 2;
+}
+
+.world-clouds--drift {
+  z-index: 3;
 }
 
 .cloud {
@@ -181,6 +203,53 @@ body {
 .cloud-5::before { width: 40px; height: 40px; top: -20px; left: 12px; }
 .cloud-5::after { width: 50px; height: 50px; top: -26px; left: 38px; }
 
+/* Large static clouds — fill the sky across the full viewport */
+.cloud-static {
+  animation: none;
+  opacity: 0.95;
+}
+
+.cloud-s1 {
+  width: 200px;
+  height: 68px;
+  top: 6%;
+  left: 4%;
+}
+
+.cloud-s1::before { width: 72px; height: 72px; top: -36px; left: 24px; }
+.cloud-s1::after { width: 96px; height: 96px; top: -48px; left: 72px; }
+
+.cloud-s2 {
+  width: 160px;
+  height: 54px;
+  top: 14%;
+  right: 8%;
+  left: auto;
+}
+
+.cloud-s2::before { width: 58px; height: 58px; top: -30px; left: 20px; }
+.cloud-s2::after { width: 74px; height: 74px; top: -38px; left: 58px; }
+
+.cloud-s3 {
+  width: 140px;
+  height: 48px;
+  top: 24%;
+  left: 18%;
+}
+
+.cloud-s3::before { width: 50px; height: 50px; top: -26px; left: 16px; }
+.cloud-s3::after { width: 64px; height: 64px; top: -34px; left: 50px; }
+
+.cloud-s4 {
+  width: 120px;
+  height: 42px;
+  top: 10%;
+  left: 55%;
+}
+
+.cloud-s4::before { width: 44px; height: 44px; top: -22px; left: 14px; }
+.cloud-s4::after { width: 56px; height: 56px; top: -28px; left: 44px; }
+
 @keyframes cloud-drift {
   from { transform: translateX(0); }
   to { transform: translateX(calc(100vw + 200px)); }
@@ -206,6 +275,7 @@ body {
   height: 180px;
   background: var(--hill-far);
   opacity: 0.5;
+  bottom: calc(var(--ground-total) + 16px);
   animation: hill-drift 30s ease-in-out infinite alternate;
 }
 
@@ -215,22 +285,73 @@ body {
   height: 140px;
   background: var(--hill-mid);
   opacity: 0.7;
-  bottom: 70px;
+  bottom: calc(var(--ground-total) + 6px);
   animation: hill-drift 25s ease-in-out infinite alternate-reverse;
 }
 
 .hill-near {
   left: 0;
   width: 100%;
-  height: 100px;
+  height: 120px;
   background: var(--hill-near);
-  bottom: 64px;
+  bottom: var(--ground-total);
 }
 
 @keyframes hill-drift {
   from { transform: translateX(-2%); }
   to { transform: translateX(2%); }
 }
+
+/* Bush silhouettes along the hills */
+.world-bushes {
+  position: fixed;
+  inset: 0;
+  z-index: 4;
+  pointer-events: none;
+}
+
+.bush {
+  position: absolute;
+  bottom: calc(var(--ground-total) + 72px);
+  background: radial-gradient(ellipse at 50% 80%, var(--hill-near) 0%, var(--grass-dark) 100%);
+  border-radius: 50%;
+}
+
+.bush::before,
+.bush::after {
+  content: '';
+  position: absolute;
+  background: inherit;
+  border-radius: 50%;
+}
+
+.bush-1 {
+  left: 12%;
+  width: 64px;
+  height: 48px;
+}
+
+.bush-1::before { width: 44px; height: 44px; top: -16px; left: -18px; }
+.bush-1::after { width: 40px; height: 40px; top: -12px; left: 28px; }
+
+.bush-2 {
+  right: 15%;
+  width: 80px;
+  height: 56px;
+}
+
+.bush-2::before { width: 52px; height: 52px; top: -20px; left: -22px; }
+.bush-2::after { width: 48px; height: 48px; top: -16px; left: 36px; }
+
+.bush-3 {
+  left: 42%;
+  width: 56px;
+  height: 42px;
+  opacity: 0.85;
+}
+
+.bush-3::before { width: 38px; height: 38px; top: -14px; left: -14px; }
+.bush-3::after { width: 34px; height: 34px; top: -10px; left: 22px; }
 
 /* Floating world decor */
 .world-floaters {
@@ -262,9 +383,10 @@ body {
   border-radius: 50%;
 }
 
-.floater-1 { top: 35%; left: 8%; animation-delay: 0s; }
-.floater-2 { top: 55%; right: 10%; animation-delay: -0.7s; width: 22px; height: 22px; }
-.floater-3 { top: 42%; right: 18%; animation-delay: -1.3s; width: 20px; height: 20px; }
+.floater-1 { top: 32%; left: 6%; animation-delay: 0s; }
+.floater-2 { top: 58%; right: 8%; animation-delay: -0.7s; width: 24px; height: 24px; }
+.floater-3 { top: 44%; right: 14%; animation-delay: -1.3s; width: 20px; height: 20px; }
+.floater-7 { top: 26%; right: 22%; animation-delay: -0.4s; width: 18px; height: 18px; }
 
 @keyframes coin-bob {
   0%, 100% { transform: translateY(0) rotateY(0deg); }
@@ -296,7 +418,8 @@ body {
   text-shadow: 1px 1px 0 var(--qblock-dark);
 }
 
-.floater-4 { top: 30%; left: 15%; animation-delay: -1s; }
+.floater-4 { top: 28%; left: 12%; animation-delay: -1s; }
+.floater-8 { top: 50%; left: 3%; animation-delay: -1.8s; width: 32px; height: 32px; }
 
 .floater-brick {
   width: 32px;
@@ -322,10 +445,9 @@ body {
 }
 
 .floater-pipe {
-  bottom: 64px;
-  left: 6%;
-  width: 56px;
-  height: 80px;
+  bottom: var(--ground-total);
+  width: 64px;
+  height: 96px;
   background: linear-gradient(90deg, var(--pipe-dark) 0%, var(--pipe-green) 30%, var(--pipe-green) 70%, var(--pipe-dark) 100%);
   border: 3px solid var(--pipe-dark);
   border-radius: 4px 4px 0 0;
@@ -335,14 +457,17 @@ body {
 .floater-pipe::before {
   content: '';
   position: absolute;
-  top: -14px;
-  left: -6px;
-  width: 68px;
-  height: 18px;
+  top: -16px;
+  left: -8px;
+  width: 80px;
+  height: 20px;
   background: linear-gradient(90deg, var(--pipe-dark), var(--pipe-green), var(--pipe-dark));
   border: 3px solid var(--pipe-dark);
   border-radius: 2px;
 }
+
+.floater-pipe-left { left: 4%; }
+.floater-pipe-right { right: 5%; left: auto; height: 72px; }
 
 /* Ground strip */
 .world-ground {
@@ -401,6 +526,7 @@ body {
   z-index: 10;
   transform-style: preserve-3d;
   transition: transform 0.15s ease-out;
+  flex-shrink: 0;
 }
 
 /* Flatten during gameplay — 3D tilt blurs the Phaser canvas in most browsers */
@@ -419,9 +545,18 @@ body {
   display: none;
 }
 
+.game-stage--crisp .hud-stat {
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
 .portal-frame {
   position: relative;
   transform-style: preserve-3d;
+}
+
+.portal-frame--play {
+  transform-style: flat;
 }
 
 .portal-frame-top {
@@ -493,11 +628,47 @@ body {
   50% { opacity: 1; }
 }
 
+.game-cabinet--play {
+  padding: 0;
+  background: transparent;
+  border: none;
+  box-shadow: none;
+}
+
+.game-cabinet--play .game-cabinet-inner {
+  overflow: hidden;
+  background: #5bc0eb;
+  box-shadow:
+    0 0 0 3px var(--grass-dark),
+    0 6px 0 var(--dirt-dark),
+    0 12px 32px rgba(0, 0, 0, 0.2);
+}
+
 .game-cabinet-inner {
+  position: relative;
   overflow: hidden;
   background: #000;
   box-shadow: inset 0 0 40px rgba(0, 0, 0, 0.9);
   isolation: isolate;
+}
+
+.game-scaler {
+  transform-origin: top left;
+  position: relative;
+}
+
+.stage-ground-lip {
+  height: 10px;
+  margin: 0 auto;
+  background: repeating-linear-gradient(
+    90deg,
+    var(--grass-top) 0px,
+    var(--grass-top) 8px,
+    var(--grass-dark) 8px,
+    var(--grass-dark) 16px
+  );
+  border-top: 3px solid var(--grass-dark);
+  box-shadow: 0 4px 0 var(--dirt-dark);
 }
 
 #game-container {
@@ -944,11 +1115,16 @@ body {
 
 .site-footer {
   position: fixed;
-  bottom: 56px;
+  bottom: calc(var(--ground-total) + 10px);
   z-index: 6;
   font-family: 'Press Start 2P', monospace;
   font-size: 0.4rem;
-  color: rgba(255, 255, 255, 0.85);
+  color: rgba(255, 255, 255, 0.9);
   letter-spacing: 0.08em;
-  text-shadow: 1px 1px 0 rgba(0, 0, 0, 0.4);
+  text-shadow: 1px 1px 0 rgba(0, 0, 0, 0.45);
+  pointer-events: none;
+}
+
+.app-shell--playing .site-footer {
+  opacity: 0.65;
 }
