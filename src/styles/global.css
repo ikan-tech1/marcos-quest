@@ -842,10 +842,10 @@ body {
 
 .menu-press-start {
   font-family: 'Press Start 2P', monospace;
-  font-size: 0.45rem;
-  color: var(--accent-red);
-  margin-top: 14px;
+  font-size: clamp(0.4rem, 1.5vw, 0.55rem);
+  color: var(--accent-gold);
   letter-spacing: 0.05em;
+  text-shadow: 2px 2px 0 rgba(0, 0, 0, 0.4);
 }
 
 .blink {
@@ -955,22 +955,22 @@ body {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 8px 20px;
-  margin-top: 18px;
-  font-size: 0.8rem;
-  color: var(--text-muted);
+  margin-top: 8px;
+  font-size: 0.75rem;
+  color: rgba(255, 248, 231, 0.85);
   text-align: left;
 }
 
 .controls-grid kbd {
   display: inline-block;
   padding: 2px 7px;
-  background: #eee;
-  border: 2px solid #ccc;
+  background: rgba(0, 0, 0, 0.25);
+  border: 2px solid rgba(255, 248, 231, 0.35);
   border-bottom-width: 3px;
   border-radius: 4px;
   font-family: 'Press Start 2P', monospace;
   font-size: 0.45rem;
-  color: var(--text);
+  color: #fff8e7;
   margin-right: 4px;
 }
 
@@ -1540,6 +1540,17 @@ body {
   font-size: 0.45rem;
   color: #fff8e7;
   margin-bottom: 4px;
+}
+
+.hud-time {
+  font-size: 0.4rem;
+  color: #fff8e7;
+  margin-bottom: 4px;
+}
+
+.hud-time--warn {
+  color: #ff6b6b;
+  animation: pulse-glow 0.5s ease-in-out infinite;
 }
 
 .hud-stat-row {

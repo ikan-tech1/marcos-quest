@@ -31,12 +31,16 @@ A next-gen Mario-style platformer built with **Phaser 4**, **React**, and **Type
 - Score Master toast at 10,000 points
 
 ### Frontend
+- **Full-viewport immersive shell** — game scales to max integer Phaser zoom (crisp pixels, no CSS canvas scale); cinematic sky letterboxing on ultrawide/tall screens
+- **Hero title screen** — full-world parallax sky, hills, pipes, and floating blocks behind wooden sign menus (not a tiny embedded widget)
+- **In-world UI panels** — wood-sign pause/game-over menus, plank HUD, grass-corner viewport frame, world-themed touch controls
+- **Screen transitions** — fade/scale between loading, menu, gameplay, pause, level clear, and game over
+- **UI sound cues** — click/confirm/cancel tones on menu and pause interactions
 - **React UI overlay** — menu, HUD (score, coins, lives, timer, world), pause, level clear, game over
 - **Pause menu** — resume, restart, sound toggle, quit (Esc / P)
 - **High score** — persisted in localStorage with new-record celebration
-- **Mobile touch controls** — on-screen D-pad, jump, dash, and fire on touch devices
-- **Mushroom-kingdom landing page** — sky, drifting clouds, green hills, grass/dirt ground strip
-- **Crisp pixel rendering** — Phaser integer zoom only (no CSS canvas scaling)
+- **Mobile touch controls** — on-screen D-pad, jump, dash, and fire styled to match the kingdom aesthetic
+- **Crisp pixel rendering** — Phaser `scale.setZoom()` integer scaling only
 
 ### Audio (procedural Web Audio)
 - Distinct SFX: jump, coin, stomp, power-up, break, fire, pipe, flag, 1-up, death, win, secret

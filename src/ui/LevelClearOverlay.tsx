@@ -1,3 +1,4 @@
+import type { CSSProperties } from 'react';
 import { GameBridge } from '../systems/GameBridge';
 import { useEffect, useState } from 'react';
 
@@ -13,10 +14,24 @@ export function LevelClearOverlay() {
   }, []);
 
   return (
-    <div className="overlay overlay-hud level-clear-overlay">
-      <div className="level-clear-banner">LEVEL CLEAR!</div>
-      {bonus > 0 && <p className="level-clear-sub">Time + flag bonus: {bonus}</p>}
-      <p className="level-clear-sub">Get ready for the next world...</p>
+    <div className="overlay overlay-level-clear screen-enter">
+      <div className="level-clear-backdrop" aria-hidden="true" />
+      <div className="level-clear-content">
+        <div className="level-clear-banner">
+          <span className="level-clear-star level-clear-star--1">★</span>
+          <span className="level-clear-text">LEVEL CLEAR!</span>
+          <span className="level-clear-star level-clear-star--2">★</span>
+        </div>
+        {bonus > 0 && (
+          <p className="level-clear-sub">Time + flag bonus: +{bonus}</p>
+        )}
+        <p className="level-clear-sub">Get ready for the next world...</p>
+        <div className="level-clear-sparkles" aria-hidden="true">
+          {Array.from({ length: 8 }, (_, i) => (
+            <span key={i} className="level-clear-sparkle" style={{ '--i': i } as CSSProperties} />
+          ))}
+        </div>
+      </div>
     </div>
   );
 }
