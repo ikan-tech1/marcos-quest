@@ -67,87 +67,128 @@ export function MenuOverlay({
         <div className="wood-sign menu-sign screen-enter screen-enter--4">
           <div className="wood-sign-post wood-sign-post--left" aria-hidden="true" />
           <div className="wood-sign-post wood-sign-post--right" aria-hidden="true" />
-          <div className="wood-sign-board">
-            {highScore > 0 && (
-              <p className="menu-high-score">
-                <span className="score-label">HIGH SCORE</span>
-                <span className="score-value">{highScore.toString().padStart(6, '0')}</span>
-              </p>
+          <div className="wood-sign-board wood-sign-board--menu">
+            {(highScore > 0 || konamiMsg) && (
+              <div className="menu-sign-meta">
+                {highScore > 0 && (
+                  <p className="menu-high-score">
+                    <span className="score-label">HIGH SCORE</span>
+                    <span className="score-value">{highScore.toString().padStart(6, '0')}</span>
+                  </p>
+                )}
+                {konamiMsg && <p className="menu-konami">{konamiMsg}</p>}
+              </div>
             )}
 
-            {konamiMsg && <p className="menu-konami">{konamiMsg}</p>}
+            <section className="sign-section sign-section--hero" aria-label="Character selection">
+              <CharacterSelect selectedId={characterId} onSelect={setCharacterId} />
+            </section>
 
-            <div className="feature-pills">
-              <span className="pill pill-green">Double Jump</span>
-              <span className="pill pill-green">Wall Jump</span>
-              <span className="pill pill-red">Dash</span>
-              <span className="pill pill-gold">Combos</span>
-              <span className="pill pill-blue">Power-Ups</span>
-            </div>
+            <div className="sign-divider" aria-hidden="true" />
 
-            <CharacterSelect selectedId={characterId} onSelect={setCharacterId} />
+            <section className="sign-section sign-section--start">
+              <button type="button" className="btn-start-coin" onClick={() => start(0)}>
+                <span className="btn-start-coin-inner">
+                  <span className="btn-start-coin-shine" />
+                  START ADVENTURE
+                </span>
+              </button>
+            </section>
 
-            <button type="button" className="btn-start-coin" onClick={() => start(0)}>
-              <span className="btn-start-coin-inner">
-                <span className="btn-start-coin-shine" />
-                START ADVENTURE
-              </span>
-            </button>
+            <div className="sign-divider" aria-hidden="true" />
 
-            <div className="level-select">
-              <p className="level-select-label">CHOOSE YOUR WORLD</p>
-              <div className="level-select-grid">
-                {playableLevels.map((level, index) => {
-                  const unlocked = Storage.isLevelUnlocked(index);
-                  const cleared = index < completedLevels;
-                  return (
+            <section className="sign-section sign-section--world" aria-label="World selection">
+              <div className="level-select">
+                <p className="level-select-label">CHOOSE YOUR WORLD</p>
+                <div className="level-select-grid">
+                  {playableLevels.map((level, index) => {
+                    const unlocked = Storage.isLevelUnlocked(index);
+                    const cleared = index < completedLevels;
+                    return (
+                      <button
+                        key={level.name}
+                        type="button"
+                        className={`level-coin${unlocked ? '' : ' level-coin--locked'}${cleared ? ' level-coin--cleared' : ''}`}
+                        disabled={!unlocked}
+                        onClick={() => start(index)}
+                        title={unlocked ? level.name : 'Complete previous world to unlock'}
+                        aria-label={unlocked ? level.name : `${level.name} — locked`}
+                      >
+                        <span className="level-coin-face">
+                          {unlocked ? (
+                            <span className="level-coin-num">{index + 1}</span>
+                          ) : (
+                            <span className="level-coin-lock" aria-hidden="true">🔒</span>
+                          )}
+                        </span>
+                      </button>
+                    );
+                  })}
+                  {secretIndex >= 0 && secretUnlocked && (
                     <button
-                      key={level.name}
                       type="button"
-                      className={`level-btn${unlocked ? '' : ' level-btn--locked'}${cleared ? ' level-btn--cleared' : ''}`}
-                      disabled={!unlocked}
-                      onClick={() => start(index)}
-                      title={unlocked ? level.name : 'Complete previous world to unlock'}
+                      className="level-coin level-coin--secret"
+                      onClick={() => start(secretIndex)}
+                      title="Star Chamber — secret level"
+                      aria-label="Star Chamber — secret level"
                     >
-                      {unlocked ? `${index + 1}` : '🔒'}
+                      <span className="level-coin-face">
+                        <span className="level-coin-num">★</span>
+                      </span>
                     </button>
-                  );
-                })}
-                {secretIndex >= 0 && secretUnlocked && (
-                  <button
-                    type="button"
-                    className="level-btn level-btn--secret"
-                    onClick={() => start(secretIndex)}
-                    title="Star Chamber — secret level"
-                  >
-                    ★
-                  </button>
-                )}
+                  )}
+                </div>
               </div>
-            </div>
+            </section>
 
-            <div className="menu-options">
-              <button
-                type="button"
-                className="btn-wood"
-                onClick={() => {
-                  UISounds.click();
-                  onToggleSound();
-                }}
-              >
-                {soundEnabled ? '🔊 Sound ON' : '🔇 Sound OFF'}
-              </button>
-              <button
-                type="button"
-                className={`btn-wood${viewMode === 'arcade' ? ' btn-wood--active' : ''}`}
-                onClick={() => {
-                  UISounds.click();
-                  onToggleViewMode();
-                }}
-              >
-                {viewMode === 'arcade' ? '🕹 Arcade Mode ON' : '🕹 Arcade Mode OFF'}
-              </button>
-            </div>
+            <div className="sign-divider sign-divider--subtle" aria-hidden="true" />
+
+            <section className="sign-section sign-section--features" aria-label="Game features">
+              <div className="feature-pills feature-pills--compact">
+                <span className="pill pill-green">2× Jump</span>
+                <span className="pill pill-green">Wall</span>
+                <span className="pill pill-red">Dash</span>
+                <span className="pill pill-gold">Combo</span>
+                <span className="pill pill-blue">Power</span>
+              </div>
+            </section>
+
+            <section className="sign-section sign-section--options" aria-label="Settings">
+              <div className="menu-options">
+                <button
+                  type="button"
+                  className={`menu-toggle${soundEnabled ? ' menu-toggle--on' : ''}`}
+                  onClick={() => {
+                    UISounds.click();
+                    onToggleSound();
+                  }}
+                  aria-pressed={soundEnabled}
+                >
+                  <span className="menu-toggle-plate">
+                    <span className="menu-toggle-knob" />
+                  </span>
+                  <span className="menu-toggle-label">
+                    {soundEnabled ? 'Sound ON' : 'Sound OFF'}
+                  </span>
+                </button>
+                <button
+                  type="button"
+                  className={`menu-toggle menu-toggle--arcade${viewMode === 'arcade' ? ' menu-toggle--on' : ''}`}
+                  onClick={() => {
+                    UISounds.click();
+                    onToggleViewMode();
+                  }}
+                  aria-pressed={viewMode === 'arcade'}
+                >
+                  <span className="menu-toggle-plate">
+                    <span className="menu-toggle-knob" />
+                  </span>
+                  <span className="menu-toggle-label">
+                    {viewMode === 'arcade' ? 'Arcade ON' : 'Arcade OFF'}
+                  </span>
+                </button>
+              </div>
+            </section>
           </div>
         </div>
 

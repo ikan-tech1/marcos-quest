@@ -1,7 +1,8 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { CHARACTERS, type CharacterDefinition } from '../config/characters';
 import { Storage } from '../systems/Storage';
 import { UISounds } from '../utils/uiSounds';
+import { getCharacterPreviewDataUrl } from '../utils/characterPreview';
 
 interface Props {
   selectedId: string;
@@ -10,12 +11,27 @@ interface Props {
 }
 
 function CharacterPreview({ character, active }: { character: CharacterDefinition; active: boolean }) {
+  const src = useMemo(() => getCharacterPreviewDataUrl(character.id), [character.id]);
+
   return (
     <div
-      className={`char-preview char-preview--${character.id}${active ? ' char-preview--active' : ''}`}
+      className={`char-preview${active ? ' char-preview--active' : ''}`}
       aria-hidden="true"
     >
-      <div className="char-preview-sprite" />
+      <div className="char-preview-frame">
+        {src ? (
+          <img
+            className="char-preview-sprite"
+            src={src}
+            alt=""
+            width={72}
+            height={144}
+            draggable={false}
+          />
+        ) : (
+          <div className={`char-preview-sprite char-preview-sprite--${character.id}`} />
+        )}
+      </div>
     </div>
   );
 }
@@ -60,13 +76,13 @@ export function CharacterSelect({ selectedId, onSelect, compact = false }: Props
           );
         })}
       </div>
-      <div className="character-detail">
+      <blockquote className="character-detail">
         <span className="character-detail-name" style={{ color: active.accentColor }}>
           {active.name}
         </span>
         <span className="character-detail-tag">{active.tagline}</span>
-        <span className="character-detail-trait">{active.trait}</span>
-      </div>
+        <p className="character-detail-trait">&ldquo;{active.trait}&rdquo;</p>
+      </blockquote>
     </div>
   );
 }
