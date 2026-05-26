@@ -2486,20 +2486,29 @@ body {
   box-shadow: 0 1px 0 #2a1810;
 }
 
-/* Compact fullscreen HUD — single slim bar, controls inline */
+/* Compact fullscreen HUD — dedicated dock above canvas, never overlaps gameplay */
 .fullscreen-hud-shell {
   position: fixed;
   left: 0;
   right: 0;
+  height: 48px;
   z-index: 55;
   pointer-events: none;
+  display: flex;
+  align-items: stretch;
+  background: linear-gradient(180deg, #1a1008 0%, #2a1810 55%, #3d2817 100%);
+  border-bottom: 3px solid #0a0604;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
 }
 
 .fullscreen-hud-shell .overlay-hud--docked {
   position: relative;
   inset: auto;
   width: 100%;
+  height: 100%;
   pointer-events: auto;
+  display: flex;
+  flex-direction: column;
 }
 
 .app-shell--browser-fullscreen .fullscreen-hud-shell {
@@ -2511,17 +2520,15 @@ body {
 }
 
 .hud-bar--compact {
-  align-items: stretch;
-  gap: 6px;
-  padding: 4px 6px;
-  background: linear-gradient(
-    180deg,
-    rgba(26, 16, 8, 0.82) 0%,
-    rgba(74, 55, 40, 0.72) 100%
-  );
-  border-bottom: 3px solid rgba(0, 0, 0, 0.45);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
-  backdrop-filter: blur(4px);
+  align-items: center;
+  gap: 8px;
+  height: 100%;
+  min-height: 44px;
+  padding: 0 10px;
+  background: transparent;
+  border-bottom: none;
+  box-shadow: none;
+  backdrop-filter: none;
 }
 
 .hud-compact-group {
@@ -2532,14 +2539,16 @@ body {
 }
 
 .hud-compact-group--left {
-  flex-shrink: 0;
+  flex: 1;
+  flex-shrink: 1;
+  min-width: 0;
 }
 
 .hud-compact-group--center {
-  flex: 1;
+  flex: 0 1 auto;
   justify-content: center;
-  flex-wrap: wrap;
-  gap: 6px 10px;
+  flex-wrap: nowrap;
+  gap: 8px 12px;
   min-width: 0;
 }
 
@@ -2577,9 +2586,32 @@ body {
 }
 
 .hud-bar--compact .hud-icon-btn {
-  width: 28px;
-  height: 28px;
-  font-size: 12px;
+  width: 32px;
+  height: 32px;
+  font-size: 13px;
+  border-width: 2px;
+}
+
+@media (max-width: 640px) {
+  .hud-compact-group--left .hud-compact-stat:nth-child(3) {
+    display: none;
+  }
+
+  .hud-compact-group--center .hud-progress {
+    display: none;
+  }
+
+  .hud-bar--compact {
+    padding: 0 6px;
+    gap: 4px;
+  }
+}
+
+@media (min-aspect-ratio: 21/9) {
+  .fullscreen-hud-shell {
+    padding-left: max(12px, env(safe-area-inset-left, 0px));
+    padding-right: max(12px, env(safe-area-inset-right, 0px));
+  }
 }
 
 .app-shell--fullscreen-play .game-viewport--fullscreen {

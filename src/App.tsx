@@ -400,18 +400,6 @@ export function App() {
               <div className="cabinet-crt-scanlines cabinet-crt-scanlines--overlay" aria-hidden="true" />
             </>
           )}
-          {showCabinet &&
-            (screen === 'playing' || screen === 'level-clear' || screen === 'paused') && (
-              <HUD
-                hud={hud}
-                viewMode={effectiveViewMode}
-                isFullscreen={isFullscreen}
-                showControls={false}
-                onPause={() => GameBridge.emit('pause-game')}
-                onToggleFullscreen={handleToggleFullscreen}
-                onToggleViewMode={toggleViewMode}
-              />
-            )}
           {screen === 'paused' && (
             <PauseOverlay
               soundEnabled={soundEnabled}

@@ -73,6 +73,26 @@ export function ArcadeCabinet({
           )}
         </div>
         <div className="cabinet-marquee-world">{hud.world || 'WORLD 1-1'}</div>
+        <div className="cabinet-marquee-stats" aria-label="Game stats">
+          <span className="cabinet-marquee-stat">
+            <span className="cabinet-marquee-stat-label">SCORE</span>
+            <span className="cabinet-marquee-stat-value">{hud.score.toString().padStart(6, '0')}</span>
+          </span>
+          <span className="cabinet-marquee-stat">
+            <span className="cabinet-marquee-stat-label">TIME</span>
+            <span className={`cabinet-marquee-stat-value${hud.timeLeft <= 100 ? ' cabinet-marquee-stat-value--warn' : ''}`}>
+              {Math.ceil(hud.timeLeft)}
+            </span>
+          </span>
+          <span className="cabinet-marquee-stat">
+            <span className="cabinet-marquee-stat-label">COINS</span>
+            <span className="cabinet-marquee-stat-value">×{hud.coins.toString().padStart(2, '0')}</span>
+          </span>
+          <span className="cabinet-marquee-stat">
+            <span className="cabinet-marquee-stat-label">LIVES</span>
+            <span className="cabinet-marquee-stat-value cabinet-marquee-stat-value--lives">♥ {hud.lives}</span>
+          </span>
+        </div>
         <div className="cabinet-marquee-actions">
           <button
             type="button"

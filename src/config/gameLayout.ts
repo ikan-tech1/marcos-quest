@@ -1,7 +1,7 @@
 import { GAME_HEIGHT, GAME_WIDTH } from './constants';
 
 /** Fixed top chrome for fullscreen HUD (px) — game scales in the area below. */
-export const FULLSCREEN_HUD_HEIGHT = 44;
+export const FULLSCREEN_HUD_HEIGHT = 48;
 
 export interface GameLayout {
   gameScale: number;

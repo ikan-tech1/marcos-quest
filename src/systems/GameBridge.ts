@@ -13,6 +13,7 @@ export interface HudState {
   highScore: number;
   timeLeft: number;
   levelBonus?: number;
+  canFire?: boolean;
 }
 
 export interface GameOverState {

@@ -169,14 +169,54 @@
 
 .cabinet-marquee-world {
   position: absolute;
-  bottom: 6px;
-  left: 50%;
-  transform: translateX(-50%);
+  top: 6px;
+  left: 12px;
+  transform: none;
   font-family: 'Press Start 2P', monospace;
   font-size: 0.32rem;
   color: var(--accent-cyan);
   text-shadow: 0 0 8px rgba(41, 182, 246, 0.8);
   letter-spacing: 0.06em;
+}
+
+.cabinet-marquee-stats {
+  position: absolute;
+  bottom: 4px;
+  left: 12px;
+  right: 120px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  pointer-events: none;
+}
+
+.cabinet-marquee-stat {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 4px;
+  font-family: 'Press Start 2P', monospace;
+}
+
+.cabinet-marquee-stat-label {
+  font-size: 0.22rem;
+  color: rgba(255, 255, 255, 0.45);
+  letter-spacing: 0.04em;
+}
+
+.cabinet-marquee-stat-value {
+  font-size: 0.32rem;
+  color: var(--accent-gold);
+  text-shadow: 0 0 6px rgba(255, 215, 0, 0.45);
+}
+
+.cabinet-marquee-stat-value--warn {
+  color: #ff6b6b;
+  animation: pulse-glow 0.5s ease-in-out infinite;
+}
+
+.cabinet-marquee-stat-value--lives {
+  color: #ff6b6b;
 }
 
 .cabinet-marquee-actions {

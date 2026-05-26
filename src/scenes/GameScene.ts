@@ -52,6 +52,7 @@ export class GameScene extends Phaser.Scene {
   private fireCooldown = 0;
   private cameraLookAhead = 0;
   private paused = false;
+  private cabinetBonusUsed = false;
   private secretMessage?: Phaser.GameObjects.Text;
   private pipeWarping = false;
 
@@ -192,6 +193,7 @@ export class GameScene extends Phaser.Scene {
         this.restartLevel();
       }
     });
+    this.events.on('cabinet-bonus-score', () => this.applyCabinetBonus());
     this.physics.world.gravity.y = GRAVITY;
     this.syncHud();
   }
@@ -247,8 +249,16 @@ export class GameScene extends Phaser.Scene {
     GameBridge.setScreen('playing');
   }
 
+  private applyCabinetBonus(): void {
+    if (this.cabinetBonusUsed || this.paused || this.levelComplete) return;
+    this.cabinetBonusUsed = true;
+    GameState.addScore(100);
+    this.syncHud();
+  }
+
   private restartLevel(): void {
     this.paused = false;
+    this.cabinetBonusUsed = false;
     this.physics.resume();
     GameState.combo = 0;
     GameState.comboTimer = 0;
@@ -269,6 +279,7 @@ export class GameScene extends Phaser.Scene {
       highScore: GameState.highScore,
       timeLeft: Math.ceil(GameState.timeLeft),
       levelBonus: GameState.lastLevelBonus || undefined,
+      canFire: this.player?.canFire ?? false,
     });
   }
 
