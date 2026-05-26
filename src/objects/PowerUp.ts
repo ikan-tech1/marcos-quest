@@ -11,7 +11,9 @@ export class PowerUp extends Phaser.Physics.Arcade.Sprite {
         ? 'powerup-spark'
         : type === PowerUpType.Blaze
           ? 'powerup-blaze'
-          : 'powerup-star';
+          : type === PowerUpType.OneUp
+            ? 'powerup-oneup'
+            : 'powerup-star';
 
     super(scene, x, y, texture);
     scene.add.existing(this);
@@ -28,10 +30,20 @@ export class PowerUp extends Phaser.Physics.Arcade.Sprite {
 
     scene.tweens.add({
       targets: this,
-      angle: 360,
+      angle: type === PowerUpType.OneUp ? 0 : 360,
       duration: 2000,
       repeat: -1,
     });
+
+    if (type === PowerUpType.OneUp) {
+      scene.tweens.add({
+        targets: this,
+        y: y - 4,
+        duration: 500,
+        yoyo: true,
+        repeat: -1,
+      });
+    }
   }
 
   collect(): void {

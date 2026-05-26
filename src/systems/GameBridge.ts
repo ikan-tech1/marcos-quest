@@ -10,6 +10,8 @@ export interface HudState {
   levelIndex: number;
   totalLevels: number;
   highScore: number;
+  timeLeft: number;
+  levelBonus?: number;
 }
 
 export interface GameOverState {

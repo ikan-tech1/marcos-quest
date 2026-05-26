@@ -49,6 +49,10 @@ export class InputManager {
     return this.cursors.up.isDown || this.keys.W.isDown;
   }
 
+  get down(): boolean {
+    return this.cursors.down.isDown || this.keys.S.isDown;
+  }
+
   get jumpPressed(): boolean {
     return (
       Phaser.Input.Keyboard.JustDown(this.cursors.up) ||

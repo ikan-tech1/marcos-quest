@@ -90,15 +90,50 @@ export class AudioManager {
     });
   }
 
+  playOneUp(): void {
+    [660, 880, 1100, 1320].forEach((freq, i) => {
+      this.scene.time.delayedCall(i * 90, () => this.playTone({ freq, duration: 0.1, volume: 0.14 }));
+    });
+  }
+
+  playPipe(): void {
+    this.playTone({ freq: 220, duration: 0.2, type: 'triangle', volume: 0.15 });
+    this.scene.time.delayedCall(120, () => this.playTone({ freq: 330, duration: 0.25, type: 'triangle', volume: 0.12 }));
+  }
+
+  playFlag(): void {
+    [784, 988, 1175, 988, 784].forEach((freq, i) => {
+      this.scene.time.delayedCall(i * 70, () => this.playTone({ freq, duration: 0.1, volume: 0.1 }));
+    });
+  }
+
+  playSecret(): void {
+    [440, 554, 659, 880, 659, 880, 1047].forEach((freq, i) => {
+      this.scene.time.delayedCall(i * 80, () => this.playTone({ freq, duration: 0.12, volume: 0.12 }));
+    });
+  }
+
   private readonly titleMelody = [262, 330, 392, 523, 392, 330, 262, 330, 392, 523, 659, 523];
   private readonly gameMelody = [392, 440, 494, 440, 392, 349, 392, 440, 494, 587, 494, 440];
+  private readonly undergroundMelody = [220, 247, 262, 247, 220, 196, 220, 247, 262, 294, 262, 247];
+  private readonly skyMelody = [523, 587, 659, 698, 659, 587, 523, 587, 659, 784, 659, 587];
+  private readonly castleMelody = [196, 220, 233, 220, 196, 175, 196, 220, 233, 262, 233, 220];
 
   startTitleMusic(): void {
     this.startMusicLoop(this.titleMelody, 220);
   }
 
-  startGameMusic(): void {
-    this.startMusicLoop(this.gameMelody, 180);
+  startGameMusic(theme: 'overworld' | 'underground' | 'sky' | 'castle' = 'overworld'): void {
+    const melody =
+      theme === 'underground'
+        ? this.undergroundMelody
+        : theme === 'sky'
+          ? this.skyMelody
+          : theme === 'castle'
+            ? this.castleMelody
+            : this.gameMelody;
+    const bpm = theme === 'castle' ? 160 : theme === 'sky' ? 200 : 180;
+    this.startMusicLoop(melody, bpm);
   }
 
   private startMusicLoop(notes: number[], bpm: number): void {

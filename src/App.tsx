@@ -17,6 +17,7 @@ import { LoadingOverlay } from './ui/LoadingOverlay';
 import { LevelClearOverlay } from './ui/LevelClearOverlay';
 import { PauseOverlay } from './ui/PauseOverlay';
 import { TouchControls } from './ui/TouchControls';
+import { UISounds } from './utils/uiSounds';
 
 const defaultHud: HudState = {
   score: 0,
@@ -26,17 +27,16 @@ const defaultHud: HudState = {
   combo: 0,
   comboMultiplier: 1,
   levelIndex: 0,
-  totalLevels: LEVELS.length,
+  totalLevels: LEVELS.filter((l) => !l.secret).length,
   highScore: Storage.getHighScore(),
+  timeLeft: 400,
 };
 
-const GROUND_STRIP_PX = 64;
-const FOOTER_CLEARANCE_PX = 28;
-
-function computeGameScale(immersive: boolean): number {
-  const stagePad = immersive ? 12 : 56;
-  const maxW = window.innerWidth - 24;
-  const maxH = window.innerHeight - GROUND_STRIP_PX - FOOTER_CLEARANCE_PX - stagePad;
+/** Max integer Phaser zoom — fills viewport, crisp pixels only. */
+function computeGameScale(): number {
+  const pad = 12;
+  const maxW = window.innerWidth - pad * 2;
+  const maxH = window.innerHeight - pad * 2;
   return Math.max(
     1,
     Math.min(
@@ -57,10 +57,12 @@ function emitToGameScene(event: string): void {
 
 const gameRefStatic = { current: null as Phaser.Game | null };
 
+const GAMEPLAY_SCREENS: GameScreen[] = ['playing', 'paused', 'level-clear', 'game-over'];
+const FULLSCREEN_UI_SCREENS: GameScreen[] = ['loading', 'menu'];
+
 export function App() {
   const gameRef = useRef<Phaser.Game | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
-  const stageRef = useRef<HTMLDivElement>(null);
   const [screen, setScreen] = useState<GameScreen>('loading');
   const [hud, setHud] = useState<HudState>(defaultHud);
   const [gameOver, setGameOver] = useState<GameOverState>({
@@ -69,12 +71,14 @@ export function App() {
     highScore: Storage.getHighScore(),
     isNewRecord: false,
   });
-  const [tilt, setTilt] = useState({ x: 0, y: 0 });
   const [gameScale, setGameScale] = useState(1);
   const [soundEnabled, setSoundEnabled] = useState(Storage.getSoundEnabled());
   const [showTouch, setShowTouch] = useState(false);
+  const [screenVisible, setScreenVisible] = useState(true);
+  const [viewport, setViewport] = useState({ w: window.innerWidth, h: window.innerHeight });
 
-  const isCrispStage = screen === 'playing' || screen === 'level-clear' || screen === 'paused';
+  const showGameViewport = GAMEPLAY_SCREENS.includes(screen);
+  const isFullScreenUI = FULLSCREEN_UI_SCREENS.includes(screen) || screen === 'game-over';
 
   const initGame = useCallback(() => {
     if (gameRef.current || !containerRef.current) return;
@@ -100,6 +104,7 @@ export function App() {
   useEffect(() => {
     initGame();
     setShowTouch(isTouchDevice());
+    UISounds.setEnabled(Storage.getSoundEnabled());
     return () => {
       gameRef.current?.destroy(true);
       gameRef.current = null;
@@ -110,7 +115,11 @@ export function App() {
   useEffect(() => {
     const unsubScreen = GameBridge.on('screen', (data) => {
       const payload = data as { screen: GameScreen; data?: unknown };
-      setScreen(payload.screen);
+      setScreenVisible(false);
+      window.setTimeout(() => {
+        setScreen(payload.screen);
+        setScreenVisible(true);
+      }, 120);
       if (payload.screen === 'game-over' && payload.data) {
         setGameOver(payload.data as GameOverState);
       }
@@ -128,7 +137,11 @@ export function App() {
       const game = gameRef.current;
       if (game) {
         game.scene.start('GameScene', { levelIndex });
-        setScreen('playing');
+        setScreenVisible(false);
+        window.setTimeout(() => {
+          setScreen('playing');
+          setScreenVisible(true);
+        }, 120);
       }
     });
 
@@ -139,7 +152,11 @@ export function App() {
         GameState.reset();
       }
       VirtualInput.reset();
-      setScreen('menu');
+      setScreenVisible(false);
+      window.setTimeout(() => {
+        setScreen('menu');
+        setScreenVisible(true);
+      }, 120);
     });
 
     const unsubResume = GameBridge.on('resume-game', () => emitToGameScene('resume-game'));
@@ -149,6 +166,7 @@ export function App() {
     const unsubSound = GameBridge.on('sound-toggle', (data) => {
       const { enabled } = data as { enabled: boolean };
       setSoundEnabled(enabled);
+      UISounds.setEnabled(enabled);
     });
 
     return () => {
@@ -164,48 +182,40 @@ export function App() {
   }, []);
 
   useEffect(() => {
-    const updateScale = () => setGameScale(computeGameScale(isCrispStage));
+    const updateScale = () => {
+      setViewport({ w: window.innerWidth, h: window.innerHeight });
+      setGameScale(computeGameScale());
+    };
     updateScale();
     window.addEventListener('resize', updateScale);
     return () => window.removeEventListener('resize', updateScale);
-  }, [isCrispStage]);
+  }, []);
 
   useEffect(() => {
     const game = gameRef.current;
     if (!game) return;
     game.scale.setZoom(gameScale);
-  }, [gameScale]);
-
-  useEffect(() => {
-    if (isCrispStage) setTilt({ x: 0, y: 0 });
-  }, [isCrispStage]);
+  }, [gameScale, showGameViewport]);
 
   const toggleSound = useCallback(() => {
     const next = !soundEnabled;
     setSoundEnabled(next);
     Storage.setSoundEnabled(next);
+    UISounds.setEnabled(next);
     GameBridge.emit('sound-toggle', { enabled: next });
+    UISounds.click();
   }, [soundEnabled]);
-
-  const handleMouseMove = useCallback((e: React.MouseEvent) => {
-    if (!stageRef.current || isCrispStage) return;
-    const rect = stageRef.current.getBoundingClientRect();
-    const cx = rect.left + rect.width / 2;
-    const cy = rect.top + rect.height / 2;
-    const dx = (e.clientX - cx) / (rect.width / 2);
-    const dy = (e.clientY - cy) / (rect.height / 2);
-    setTilt({ x: -dy * 4, y: dx * 4 });
-  }, [isCrispStage]);
-
-  const handleMouseLeave = useCallback(() => {
-    setTilt({ x: 0, y: 0 });
-  }, []);
 
   const scaledW = GAME_WIDTH * gameScale;
   const scaledH = GAME_HEIGHT * gameScale;
+  const letterboxX = Math.max(0, (viewport.w - scaledW) / 2);
+  const letterboxY = Math.max(0, (viewport.h - scaledH) / 2);
 
   return (
-    <div className={`app-shell${isCrispStage ? ' app-shell--playing' : ' app-shell--menu'}`}>
+    <div
+      className={`app-shell app-shell--${screen}${showGameViewport ? ' app-shell--gameplay' : ' app-shell--hero'}`}
+      data-transition={screenVisible ? 'in' : 'out'}
+    >
       <div className="world-sky" aria-hidden="true" />
       <div className="world-sun" aria-hidden="true" />
 
@@ -236,92 +246,104 @@ export function App() {
         <div className="bush bush-3" />
       </div>
 
-      <div className="world-floaters" aria-hidden="true">
-        <div className="floater floater-coin floater-1" />
-        <div className="floater floater-coin floater-2" />
-        <div className="floater floater-coin floater-3" />
-        <div className="floater floater-coin floater-7" />
-        <div className="floater floater-qblock floater-4" />
-        <div className="floater floater-qblock floater-8" />
-        <div className="floater floater-brick floater-5" />
-        <div className="floater floater-brick floater-6" />
-        <div className="floater floater-pipe floater-pipe-left" />
-        <div className="floater floater-pipe floater-pipe-right" />
-      </div>
+      {!showGameViewport && (
+        <div className="world-floaters" aria-hidden="true">
+          <div className="floater floater-coin floater-1" />
+          <div className="floater floater-coin floater-2" />
+          <div className="floater floater-coin floater-3" />
+          <div className="floater floater-coin floater-7" />
+          <div className="floater floater-qblock floater-4" />
+          <div className="floater floater-qblock floater-8" />
+          <div className="floater floater-brick floater-5" />
+          <div className="floater floater-brick floater-6" />
+          <div className="floater floater-pipe floater-pipe-left" />
+          <div className="floater floater-pipe floater-pipe-right" />
+        </div>
+      )}
 
       <div className="world-ground" aria-hidden="true">
         <div className="ground-grass" />
         <div className="ground-dirt" />
       </div>
 
+      {/* Hidden mount — Phaser always needs a parent */}
       <div
-        ref={stageRef}
-        className={`game-stage${isCrispStage ? ' game-stage--crisp' : ''}`}
-        onMouseMove={handleMouseMove}
-        onMouseLeave={handleMouseLeave}
+        id="game-container"
+        ref={containerRef}
+        className={showGameViewport ? 'game-container--live' : 'game-container--hidden'}
         style={
-          isCrispStage
-            ? undefined
-            : { transform: `rotateX(${tilt.x}deg) rotateY(${tilt.y}deg)` }
+          showGameViewport
+            ? ({
+                width: scaledW,
+                height: scaledH,
+                left: letterboxX,
+                top: letterboxY,
+                '--game-scale': gameScale,
+              } as React.CSSProperties)
+            : undefined
         }
-      >
-        <div className={`portal-frame${isCrispStage ? ' portal-frame--play' : ''}`}>
-          {!isCrispStage && (
-            <div className="portal-frame-top">
-              <span className="portal-bolt" />
-              <span className="portal-label">EASHAN&apos;S QUEST</span>
-              <span className="portal-bolt" />
-            </div>
-          )}
+      />
 
-          <div className={`game-cabinet${isCrispStage ? ' game-cabinet--play' : ''}`}>
-            <div
-              className="game-cabinet-inner"
-              style={
-                {
-                  width: scaledW,
-                  height: scaledH,
-                  '--game-scale': gameScale,
-                } as React.CSSProperties
-              }
-            >
-              <div id="game-container" ref={containerRef} />
-              {screen === 'loading' && <LoadingOverlay />}
-              {screen === 'menu' && (
-                <MenuOverlay
-                  highScore={Storage.getHighScore()}
-                  soundEnabled={soundEnabled}
-                  onToggleSound={toggleSound}
-                />
-              )}
-              {(screen === 'playing' || screen === 'level-clear') && (
-                <HUD hud={hud} onPause={() => GameBridge.emit('pause-game')} />
-              )}
-              {screen === 'paused' && (
-                <>
-                  <HUD hud={hud} onPause={() => GameBridge.emit('pause-game')} />
-                  <PauseOverlay soundEnabled={soundEnabled} onToggleSound={toggleSound} />
-                </>
-              )}
-              {screen === 'level-clear' && (
-                <>
-                  <LevelClearOverlay />
-                </>
-              )}
-              {screen === 'game-over' && <GameOverOverlay state={gameOver} />}
-              {showTouch && (screen === 'playing' || screen === 'paused') && <TouchControls />}
-            </div>
-            {isCrispStage && <div className="stage-ground-lip" style={{ width: scaledW }} />}
+      {showGameViewport && (
+        <div
+          className="game-viewport"
+          style={{
+            width: scaledW,
+            height: scaledH,
+            left: letterboxX,
+            top: letterboxY,
+          }}
+        >
+          <div className="game-viewport-frame" aria-hidden="true">
+            <div className="frame-corner frame-corner--tl" />
+            <div className="frame-corner frame-corner--tr" />
+            <div className="frame-corner frame-corner--bl" />
+            <div className="frame-corner frame-corner--br" />
+            <div className="frame-grass-lip" />
           </div>
 
-          {!isCrispStage && <div className="portal-frame-bottom" />}
+          {(screen === 'playing' || screen === 'level-clear' || screen === 'paused') && (
+            <HUD hud={hud} onPause={() => GameBridge.emit('pause-game')} />
+          )}
+          {screen === 'paused' && (
+            <PauseOverlay soundEnabled={soundEnabled} onToggleSound={toggleSound} />
+          )}
+          {screen === 'level-clear' && <LevelClearOverlay />}
+          {showTouch && (screen === 'playing' || screen === 'paused') && <TouchControls />}
         </div>
+      )}
+
+      {showGameViewport && (letterboxX > 0 || letterboxY > 0) && (
+        <>
+          {letterboxY > 0 && <div className="letterbox letterbox--top" style={{ height: letterboxY }} />}
+          {letterboxY > 0 && (
+            <div className="letterbox letterbox--bottom" style={{ height: letterboxY, bottom: 0 }} />
+          )}
+          {letterboxX > 0 && <div className="letterbox letterbox--left" style={{ width: letterboxX }} />}
+          {letterboxX > 0 && (
+            <div className="letterbox letterbox--right" style={{ width: letterboxX, right: 0 }} />
+          )}
+        </>
+      )}
+
+      <div className={`screen-layer${isFullScreenUI ? ' screen-layer--fullscreen' : ''}`}>
+        {screen === 'loading' && <LoadingOverlay />}
+        {screen === 'menu' && (
+          <MenuOverlay
+            highScore={Storage.getHighScore()}
+            soundEnabled={soundEnabled}
+            onToggleSound={toggleSound}
+          />
+        )}
+        {screen === 'game-over' && <GameOverOverlay state={gameOver} />}
       </div>
 
-      <footer className="site-footer">
-        EASHAN&apos;S QUEST — Built with Phaser + React
-        {showTouch && <span className="mobile-hint"> · Tap controls enabled</span>}
-      </footer>
+      {!showGameViewport && screen !== 'loading' && (
+        <footer className="site-footer site-footer--hero">
+          EASHAN&apos;S QUEST
+          {showTouch && <span className="mobile-hint"> · Touch ready</span>}
+        </footer>
+      )}
     </div>
   );
 }

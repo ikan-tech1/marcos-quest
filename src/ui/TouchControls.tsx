@@ -49,21 +49,21 @@ export function TouchControls() {
   return (
     <div className="touch-controls" aria-label="Touch controls">
       <div className="touch-dpad">
-        <button type="button" className="touch-btn touch-btn-left" aria-label="Move left" {...left}>
+        <button type="button" className="touch-btn touch-btn-left touch-btn--block" aria-label="Move left" {...left}>
           ◀
         </button>
-        <button type="button" className="touch-btn touch-btn-right" aria-label="Move right" {...right}>
+        <button type="button" className="touch-btn touch-btn-right touch-btn--block" aria-label="Move right" {...right}>
           ▶
         </button>
       </div>
       <div className="touch-actions">
-        <button type="button" className="touch-btn touch-btn-dash" aria-label="Dash" {...dash}>
+        <button type="button" className="touch-btn touch-btn-dash touch-btn--wood" aria-label="Dash" {...dash}>
           DASH
         </button>
-        <button type="button" className="touch-btn touch-btn-jump" aria-label="Jump" {...jump}>
+        <button type="button" className="touch-btn touch-btn-jump touch-btn--coin" aria-label="Jump" {...jump}>
           JUMP
         </button>
-        <button type="button" className="touch-btn touch-btn-fire" aria-label="Fire" {...fire}>
+        <button type="button" className="touch-btn touch-btn-fire touch-btn--wood" aria-label="Fire" {...fire}>
           FIRE
         </button>
       </div>

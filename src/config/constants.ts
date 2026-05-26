@@ -29,6 +29,17 @@ export const COIN_VALUE = 100;
 export const STOMP_BOUNCE = -280;
 
 export const STARTING_LIVES = 3;
+export const LEVEL_TIME_SECONDS = 400;
+export const COIN_BLOCK_COINS = 8;
+export const SPRING_BOUNCE_VELOCITY = -520;
+
+export const LevelTheme = {
+  Overworld: 'overworld',
+  Underground: 'underground',
+  Sky: 'sky',
+  Castle: 'castle',
+} as const;
+export type LevelTheme = (typeof LevelTheme)[keyof typeof LevelTheme];
 
 export const TileType = {
   Empty: 0,
@@ -39,6 +50,8 @@ export const TileType = {
   OneWay: 5,
   Hard: 6,
   Hidden: 7,
+  CoinBlock: 8,
+  Spring: 9,
 } as const;
 export type TileType = (typeof TileType)[keyof typeof TileType];
 
@@ -46,6 +59,7 @@ export const PowerUpType = {
   Spark: 'spark',
   Blaze: 'blaze',
   Star: 'star',
+  OneUp: 'oneup',
 } as const;
 export type PowerUpType = (typeof PowerUpType)[keyof typeof PowerUpType];
 
@@ -53,6 +67,8 @@ export const EnemyType = {
   Walker: 'walker',
   Shell: 'shell',
   Flyer: 'flyer',
+  Piranha: 'piranha',
+  Boss: 'boss',
 } as const;
 export type EnemyType = (typeof EnemyType)[keyof typeof EnemyType];
 

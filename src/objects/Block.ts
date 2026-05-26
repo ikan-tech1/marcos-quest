@@ -1,8 +1,8 @@
 import Phaser from 'phaser';
-import { TILE_SIZE, TileType } from '../config/constants';
+import { COIN_BLOCK_COINS, TILE_SIZE, TileType } from '../config/constants';
 import type { PowerUpType } from '../config/constants';
 
-export type BlockKind = 'question' | 'brick' | 'hidden';
+export type BlockKind = 'question' | 'brick' | 'hidden' | 'coin-block' | 'spring';
 
 export class Block extends Phaser.Physics.Arcade.Sprite {
   blockKind: BlockKind;
@@ -11,6 +11,8 @@ export class Block extends Phaser.Physics.Arcade.Sprite {
   isUsed = false;
   contents: 'coin' | PowerUpType;
   hiddenRevealed = false;
+  coinBlockRemaining = COIN_BLOCK_COINS;
+  coinBlockCooldown = 0;
 
   constructor(
     scene: Phaser.Scene,
@@ -26,7 +28,11 @@ export class Block extends Phaser.Physics.Arcade.Sprite {
         ? 'tile-question'
         : kind === 'hidden'
           ? 'tile-hidden'
-          : 'tile-brick';
+          : kind === 'coin-block'
+            ? 'tile-coin-block'
+            : kind === 'spring'
+              ? 'tile-spring'
+              : 'tile-brick';
 
     super(scene, x, y, texture);
     scene.add.existing(this);
@@ -41,6 +47,10 @@ export class Block extends Phaser.Physics.Arcade.Sprite {
     body.setImmovable(true);
     body.setAllowGravity(false);
 
+    if (kind === 'hidden') {
+      this.setAlpha(0);
+    }
+
     if (kind === 'question' && !this.isUsed) {
       scene.tweens.add({
         targets: this,
@@ -54,10 +64,38 @@ export class Block extends Phaser.Physics.Arcade.Sprite {
   }
 
   hitFromBelow(): boolean {
+    if (this.blockKind === 'spring') {
+      this.scene.tweens.add({
+        targets: this,
+        y: this.y - 6,
+        duration: 80,
+        yoyo: true,
+      });
+      return true;
+    }
+
+    if (this.blockKind === 'coin-block') {
+      if (this.coinBlockRemaining <= 0 || this.coinBlockCooldown > 0) return false;
+      this.scene.tweens.add({
+        targets: this,
+        y: this.y - 8,
+        duration: 80,
+        yoyo: true,
+      });
+      this.coinBlockRemaining -= 1;
+      this.coinBlockCooldown = 120;
+      if (this.coinBlockRemaining <= 0) {
+        this.isUsed = true;
+        this.setTexture('tile-used');
+      }
+      return true;
+    }
+
     if (this.isUsed && this.blockKind !== 'brick') return false;
 
     if (this.blockKind === 'hidden' && !this.hiddenRevealed) {
       this.hiddenRevealed = true;
+      this.setAlpha(1);
       this.setTexture('tile-used');
       this.isUsed = true;
       return true;
@@ -88,14 +126,20 @@ export class Block extends Phaser.Physics.Arcade.Sprite {
     return false;
   }
 
+  updateCooldown(delta: number): void {
+    if (this.coinBlockCooldown > 0) {
+      this.coinBlockCooldown = Math.max(0, this.coinBlockCooldown - delta);
+    }
+  }
+
   break(): void {
     this.destroy();
   }
 
-  static tileTypeToTexture(type: TileType): string | null {
+  static tileTypeToTexture(type: TileType, themeGround = 'tile-ground'): string | null {
     switch (type) {
       case TileType.Ground:
-        return 'tile-ground';
+        return themeGround;
       case TileType.Brick:
         return 'tile-brick';
       case TileType.Question:
@@ -106,6 +150,10 @@ export class Block extends Phaser.Physics.Arcade.Sprite {
         return 'tile-hard';
       case TileType.Hidden:
         return 'tile-hidden';
+      case TileType.CoinBlock:
+        return 'tile-coin-block';
+      case TileType.Spring:
+        return 'tile-spring';
       default:
         return null;
     }
@@ -118,7 +166,9 @@ export class Block extends Phaser.Physics.Arcade.Sprite {
       type === TileType.Question ||
       type === TileType.Pipe ||
       type === TileType.Hard ||
-      type === TileType.Hidden
+      type === TileType.Hidden ||
+      type === TileType.CoinBlock ||
+      type === TileType.Spring
     );
   }
 

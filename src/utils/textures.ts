@@ -305,5 +305,69 @@ export function generateTextures(scene: Phaser.Scene): void {
   g.generateTexture('tile-used', 32, 32);
   g.clear();
 
+  // Theme ground tiles
+  drawRect(g, 32, 32, 0x4a3728);
+  g.fillStyle(0x6b5344, 1);
+  g.fillRect(2, 2, 28, 8);
+  g.generateTexture('tile-ground-underground', 32, 32);
+  g.clear();
+
+  drawRect(g, 32, 32, 0x88ccff, 0x6699cc);
+  g.generateTexture('tile-ground-sky', 32, 32);
+  g.clear();
+
+  drawRect(g, 32, 32, 0x555555, 0x333333);
+  g.fillStyle(0x772222, 0.4);
+  g.fillRect(4, 24, 24, 6);
+  g.generateTexture('tile-ground-castle', 32, 32);
+  g.clear();
+
+  // Coin block
+  drawRect(g, 32, 32, 0xf4a020, 0xc47a00);
+  g.fillStyle(0xffd700, 1);
+  g.fillCircle(16, 16, 8);
+  g.generateTexture('tile-coin-block', 32, 32);
+  g.clear();
+
+  // Spring / note block
+  drawRect(g, 32, 32, 0x44aa44, 0x228822);
+  g.fillStyle(0xffffff, 1);
+  g.fillRect(8, 10, 16, 12);
+  g.generateTexture('tile-spring', 32, 32);
+  g.clear();
+
+  // Piranha plant
+  g.fillStyle(0x228822, 1);
+  g.fillRect(10, 16, 8, 12);
+  g.fillStyle(0xff2244, 1);
+  g.fillCircle(14, 10, 10);
+  g.fillStyle(0xffffff, 1);
+  g.fillCircle(10, 8, 3);
+  g.fillCircle(18, 8, 3);
+  g.generateTexture('enemy-piranha', 28, 28);
+  g.clear();
+
+  // Boss — Iron Guard
+  g.fillStyle(0x444444, 1);
+  g.fillRect(4, 8, 36, 36);
+  g.fillStyle(0xffcc00, 1);
+  g.fillRect(10, 4, 24, 8);
+  g.fillStyle(0xff0000, 1);
+  g.fillCircle(14, 20, 4);
+  g.fillCircle(30, 20, 4);
+  g.generateTexture('enemy-boss', 44, 44);
+  g.clear();
+
+  // 1-Up mushroom
+  g.fillStyle(0x00cc44, 1);
+  g.fillEllipse(10, 14, 18, 14);
+  g.fillStyle(0xffffff, 1);
+  g.fillCircle(6, 12, 3);
+  g.fillCircle(14, 10, 3);
+  g.fillStyle(0xf5deb3, 1);
+  g.fillRect(7, 16, 6, 8);
+  g.generateTexture('powerup-oneup', 20, 24);
+  g.clear();
+
   g.destroy();
 }

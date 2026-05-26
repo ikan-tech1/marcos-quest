@@ -35,10 +35,10 @@ export class Coin extends Phaser.Physics.Arcade.Sprite {
     });
   }
 
-  collect(audio: AudioManager): void {
-    if (this.collected) return;
+  collect(audio: AudioManager): boolean {
+    if (this.collected) return false;
     this.collected = true;
-    GameState.addCoin();
+    const gotLife = GameState.addCoin();
     audio.playCoin();
     spawnSparkle(this.scene, this.x, this.y);
     this.scene.tweens.add({
@@ -48,5 +48,6 @@ export class Coin extends Phaser.Physics.Arcade.Sprite {
       duration: 300,
       onComplete: () => this.destroy(),
     });
+    return gotLife;
   }
 }

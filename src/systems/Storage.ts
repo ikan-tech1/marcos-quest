@@ -1,6 +1,7 @@
 const HIGH_SCORE_KEY = 'eashans-quest-high-score';
 const COMPLETED_LEVELS_KEY = 'eashans-quest-completed';
 const SOUND_ENABLED_KEY = 'eashans-quest-sound';
+const SECRET_UNLOCKED_KEY = 'eashans-quest-secret';
 
 export const Storage = {
   getHighScore(): number {
@@ -59,6 +60,24 @@ export const Storage = {
       localStorage.setItem(SOUND_ENABLED_KEY, String(enabled));
     } catch {
       /* ignore */
+    }
+  },
+
+  markSecretUnlocked(): boolean {
+    try {
+      if (localStorage.getItem(SECRET_UNLOCKED_KEY) === 'true') return false;
+      localStorage.setItem(SECRET_UNLOCKED_KEY, 'true');
+      return true;
+    } catch {
+      return false;
+    }
+  },
+
+  isSecretLevelUnlocked(): boolean {
+    try {
+      return localStorage.getItem(SECRET_UNLOCKED_KEY) === 'true';
+    } catch {
+      return false;
     }
   },
 };

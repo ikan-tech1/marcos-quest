@@ -6,6 +6,8 @@ interface Props {
 }
 
 export function HUD({ hud, onPause }: Props) {
+  const timeClass = hud.timeLeft <= 100 ? 'hud-time hud-time--warn' : 'hud-time';
+
   return (
     <div className="overlay overlay-hud">
       <div className="hud-bar">
@@ -15,6 +17,7 @@ export function HUD({ hud, onPause }: Props) {
         </div>
         <div className="hud-stat hud-center">
           {hud.world}
+          <div className={`${timeClass}`}>TIME {Math.ceil(hud.timeLeft)}</div>
           <div className="hud-progress">
             {Array.from({ length: hud.totalLevels }, (_, i) => (
               <span

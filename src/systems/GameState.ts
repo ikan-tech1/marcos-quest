@@ -1,4 +1,4 @@
-import { STARTING_LIVES } from '../config/constants';
+import { LEVEL_TIME_SECONDS, STARTING_LIVES } from '../config/constants';
 import { Storage } from './Storage';
 
 class GameStateManager {
@@ -8,6 +8,9 @@ class GameStateManager {
   currentLevel = 0;
   combo = 0;
   comboTimer = 0;
+  timeLeft = LEVEL_TIME_SECONDS;
+  flagBonus = 0;
+  lastLevelBonus = 0;
 
   reset(): void {
     this.score = 0;
@@ -16,6 +19,18 @@ class GameStateManager {
     this.currentLevel = 0;
     this.combo = 0;
     this.comboTimer = 0;
+    this.timeLeft = LEVEL_TIME_SECONDS;
+    this.flagBonus = 0;
+    this.lastLevelBonus = 0;
+  }
+
+  resetTimer(seconds = LEVEL_TIME_SECONDS): void {
+    this.timeLeft = seconds;
+  }
+
+  tickTimer(delta: number): boolean {
+    this.timeLeft = Math.max(0, this.timeLeft - delta / 1000);
+    return this.timeLeft <= 0;
   }
 
   get comboMultiplier(): number {
@@ -41,17 +56,32 @@ class GameStateManager {
     return points;
   }
 
-  addCoin(): void {
+  addCoin(): boolean {
     this.coins += 1;
     this.score += 100;
     if (this.coins >= 100) {
       this.coins = 0;
       this.lives += 1;
+      return true;
     }
+    return false;
+  }
+
+  addLife(): void {
+    this.lives += 1;
   }
 
   addScore(points: number): void {
     this.score += points;
+  }
+
+  addFlagBonus(flagY: number, poleTopY: number): number {
+    const heightBonus = Math.max(100, Math.floor((poleTopY - flagY) / 4) * 100);
+    const timeBonus = Math.floor(this.timeLeft) * 50;
+    this.flagBonus = heightBonus;
+    this.lastLevelBonus = heightBonus + timeBonus;
+    this.score += this.lastLevelBonus;
+    return this.lastLevelBonus;
   }
 
   loseLife(): boolean {
@@ -66,6 +96,8 @@ class GameStateManager {
     this.currentLevel += 1;
     this.combo = 0;
     this.comboTimer = 0;
+    this.timeLeft = LEVEL_TIME_SECONDS;
+    this.flagBonus = 0;
   }
 
   recordHighScore(): { highScore: number; isNewRecord: boolean } {

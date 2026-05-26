@@ -2,10 +2,11 @@ import Phaser from 'phaser';
 import { TILE_SIZE, TileType } from '../config/constants';
 import { Block } from '../objects/Block';
 import { Coin } from '../objects/Coin';
+import { Pipe } from '../objects/Pipe';
 import { MovingPlatform } from '../entities/MovingPlatform';
 import { Enemy } from '../entities/Enemy';
 import type { LevelData } from './levelData';
-import { parseLevelMap } from './levelData';
+import { parseLevelMap, themeGroundTexture } from './levelData';
 
 export interface BuiltLevel {
   width: number;
@@ -13,7 +14,9 @@ export interface BuiltLevel {
   groundLayer: Phaser.Physics.Arcade.StaticGroup;
   oneWayLayer: Phaser.Physics.Arcade.StaticGroup;
   blocks: Block[];
+  pipes: Pipe[];
   tileSprites: Phaser.GameObjects.Image[];
+  flagPositions: { x: number; y: number }[];
 }
 
 export class LevelBuilder {
@@ -23,13 +26,16 @@ export class LevelBuilder {
     const width = grid[0].length;
     const worldWidth = width * TILE_SIZE;
     const worldHeight = height * TILE_SIZE;
+    const groundTex = themeGroundTexture(level.theme);
 
     scene.physics.world.setBounds(0, 0, worldWidth, worldHeight + 200);
 
     const groundLayer = scene.physics.add.staticGroup();
     const oneWayLayer = scene.physics.add.staticGroup();
     const blocks: Block[] = [];
+    const pipes: Pipe[] = [];
     const tileSprites: Phaser.GameObjects.Image[] = [];
+    const flagPositions: { x: number; y: number }[] = [];
 
     const blockContentsMap = new Map<string, LevelData['blockContents'][0]['contents']>();
     level.blockContents.forEach((bc) => {
@@ -51,22 +57,37 @@ export class LevelBuilder {
           plat.body!.checkCollision.down = false;
           plat.body!.checkCollision.left = false;
           plat.body!.checkCollision.right = false;
-          tileSprites.push(
-            scene.add.image(x, y, 'tile-oneway').setDepth(1),
-          );
+          tileSprites.push(scene.add.image(x, y, 'tile-oneway').setDepth(1));
           continue;
         }
 
-        const texture = Block.tileTypeToTexture(type);
+        const texture = Block.tileTypeToTexture(type, groundTex);
         if (!texture) continue;
 
-        if (type === TileType.Brick || type === TileType.Question || type === TileType.Hidden) {
+        if (
+          type === TileType.Brick ||
+          type === TileType.Question ||
+          type === TileType.Hidden ||
+          type === TileType.CoinBlock ||
+          type === TileType.Spring
+        ) {
           const kind =
-            type === TileType.Brick ? 'brick' : type === TileType.Hidden ? 'hidden' : 'question';
+            type === TileType.Brick
+              ? 'brick'
+              : type === TileType.Hidden
+                ? 'hidden'
+                : type === TileType.CoinBlock
+                  ? 'coin-block'
+                  : type === TileType.Spring
+                    ? 'spring'
+                    : 'question';
           const contents = blockContentsMap.get(`${tx},${ty}`) ?? 'coin';
           const block = new Block(scene, x, y, kind, tx, ty, contents);
           blocks.push(block);
           groundLayer.add(block);
+          if (kind !== 'hidden') {
+            tileSprites.push(scene.add.image(x, y, texture).setDepth(1));
+          }
         } else {
           const tile = groundLayer.create(x, y, texture) as Phaser.Physics.Arcade.Sprite;
           tile.refreshBody();
@@ -76,18 +97,22 @@ export class LevelBuilder {
       }
     }
 
-    // Flag poles at goal
     for (let ty = 0; ty < height; ty++) {
       const row = level.map[ty];
       for (let tx = 0; tx < row.length; tx++) {
         if (row[tx] === 'F') {
           const { x, y } = Block.worldPos(tx, ty);
           scene.add.image(x, y, 'tile-flag').setDepth(2);
+          flagPositions.push({ x, y });
         }
       }
     }
 
-    return { width, height, groundLayer, oneWayLayer, blocks, tileSprites };
+    level.pipes?.forEach((pipeConfig) => {
+      pipes.push(new Pipe(scene, pipeConfig));
+    });
+
+    return { width, height, groundLayer, oneWayLayer, blocks, pipes, tileSprites, flagPositions };
   }
 
   static spawnEnemies(scene: Phaser.Scene, level: LevelData): Enemy[] {

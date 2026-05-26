@@ -1,5 +1,7 @@
+import { useEffect, useState } from 'react';
 import { GameBridge } from '../systems/GameBridge';
 import { Storage } from '../systems/Storage';
+import { EasterEggs } from '../systems/EasterEggs';
 import { LEVELS } from '../levels/levelData';
 
 interface Props {
@@ -9,11 +11,27 @@ interface Props {
 }
 
 export function MenuOverlay({ highScore, soundEnabled, onToggleSound }: Props) {
+  const [konamiMsg, setKonamiMsg] = useState('');
+  const secretUnlocked = EasterEggs.isSecretLevelUnlocked();
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (EasterEggs.handleKey(e.code)) {
+        setKonamiMsg('Konami code! +3 lives on next run');
+        EasterEggs.unlock('konami');
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, []);
+
   const start = (levelIndex = 0) => {
     GameBridge.emit('start-game', { levelIndex });
   };
 
   const completedLevels = Storage.getCompletedLevels();
+  const playableLevels = LEVELS.filter((l) => !l.secret);
+  const secretIndex = LEVELS.findIndex((l) => l.secret);
 
   return (
     <div className="overlay overlay-menu">
@@ -38,6 +56,8 @@ export function MenuOverlay({ highScore, soundEnabled, onToggleSound }: Props) {
           </p>
         )}
 
+        {konamiMsg && <p className="menu-konami">{konamiMsg}</p>}
+
         <div className="feature-pills">
           <span className="pill pill-green">Double Jump</span>
           <span className="pill pill-green">Wall Jump</span>
@@ -56,7 +76,7 @@ export function MenuOverlay({ highScore, soundEnabled, onToggleSound }: Props) {
         <div className="level-select">
           <p className="level-select-label">SELECT WORLD</p>
           <div className="level-select-grid">
-            {LEVELS.map((level, index) => {
+            {playableLevels.map((level, index) => {
               const unlocked = Storage.isLevelUnlocked(index);
               const cleared = index < completedLevels;
               return (
@@ -72,6 +92,16 @@ export function MenuOverlay({ highScore, soundEnabled, onToggleSound }: Props) {
                 </button>
               );
             })}
+            {secretIndex >= 0 && secretUnlocked && (
+              <button
+                type="button"
+                className="level-btn level-btn--secret"
+                onClick={() => start(secretIndex)}
+                title="Star Chamber — secret level"
+              >
+                ★
+              </button>
+            )}
           </div>
         </div>
 
@@ -86,6 +116,7 @@ export function MenuOverlay({ highScore, soundEnabled, onToggleSound }: Props) {
         <div className="controls-grid">
           <div><kbd>←→</kbd> / <kbd>A D</kbd> Move</div>
           <div><kbd>Space</kbd> / <kbd>W</kbd> Jump ×2</div>
+          <div><kbd>↓</kbd> / <kbd>S</kbd> Enter pipes</div>
           <div><kbd>Shift</kbd> / <kbd>K</kbd> Dash</div>
           <div><kbd>Z</kbd> / <kbd>J</kbd> Fire</div>
           <div><kbd>Esc</kbd> / <kbd>P</kbd> Pause</div>

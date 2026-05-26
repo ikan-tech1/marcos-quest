@@ -1,5 +1,10 @@
 import Phaser from 'phaser';
-import { ENEMY_FLYER_SPEED, ENEMY_SHELL_SPEED, ENEMY_WALKER_SPEED, EnemyType } from '../config/constants';
+import {
+  ENEMY_FLYER_SPEED,
+  ENEMY_SHELL_SPEED,
+  ENEMY_WALKER_SPEED,
+  EnemyType,
+} from '../config/constants';
 import type { Player } from './Player';
 
 export class Enemy extends Phaser.Physics.Arcade.Sprite {
@@ -12,6 +17,9 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
   private flyBaseY: number;
   private flyPhase = 0;
   private groundLayer: Phaser.Physics.Arcade.StaticGroup | null = null;
+  private piranhaTimer = 0;
+  private piranhaHidden = false;
+  private bossHp = 3;
 
   setGroundLayer(layer: Phaser.Physics.Arcade.StaticGroup): void {
     this.groundLayer = layer;
@@ -21,6 +29,8 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
     if (
       !this.groundLayer ||
       this.enemyType === EnemyType.Flyer ||
+      this.enemyType === EnemyType.Piranha ||
+      this.enemyType === EnemyType.Boss ||
       this.isShell ||
       !this.isActive
     ) {
@@ -63,7 +73,11 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
         ? 'enemy-walker'
         : type === EnemyType.Shell
           ? 'enemy-shell'
-          : 'enemy-flyer';
+          : type === EnemyType.Piranha
+            ? 'enemy-piranha'
+            : type === EnemyType.Boss
+              ? 'enemy-boss'
+              : 'enemy-flyer';
 
     super(scene, x, y, texture);
     scene.add.existing(this);
@@ -79,6 +93,16 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
       body.setAllowGravity(false);
       body.setSize(24, 16);
       body.setOffset(2, 2);
+    } else if (type === EnemyType.Piranha) {
+      body.setAllowGravity(false);
+      body.setSize(22, 24);
+      body.setOffset(3, 4);
+      this.y += 16;
+    } else if (type === EnemyType.Boss) {
+      body.setSize(36, 40);
+      body.setOffset(6, 4);
+      body.setVelocityX(-ENEMY_WALKER_SPEED * 0.8);
+      this.setScale(1.4);
     } else {
       body.setSize(24, 20);
       body.setOffset(2, 2);
@@ -86,9 +110,35 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
     }
   }
 
-  update(_time: number, delta: number): void {
+  update(_time: number, delta: number, playerX?: number): void {
     if (!this.isActive) return;
     const body = this.body as Phaser.Physics.Arcade.Body;
+
+    if (this.enemyType === EnemyType.Piranha) {
+      this.piranhaTimer += delta;
+      if (playerX !== undefined && Math.abs(playerX - this.x) < 48) {
+        this.piranhaHidden = true;
+      } else if (this.piranhaTimer > 2500) {
+        this.piranhaHidden = !this.piranhaHidden;
+        this.piranhaTimer = 0;
+      }
+      const targetY = this.piranhaHidden ? this.flyBaseY + 24 : this.flyBaseY - 8;
+      this.y = Phaser.Math.Linear(this.y, targetY, 0.08);
+      return;
+    }
+
+    if (this.enemyType === EnemyType.Boss) {
+      if (body.blocked.left || this.x <= this.patrolMin) {
+        this.direction = 1;
+        body.setVelocityX(ENEMY_WALKER_SPEED * 0.8);
+        this.setFlipX(true);
+      } else if (body.blocked.right || this.x >= this.patrolMax) {
+        this.direction = -1;
+        body.setVelocityX(-ENEMY_WALKER_SPEED * 0.8);
+        this.setFlipX(false);
+      }
+      return;
+    }
 
     if (this.enemyType === EnemyType.Flyer) {
       this.flyPhase += delta * 0.003;
@@ -128,6 +178,35 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
 
   stomp(): boolean {
     if (!this.isActive) return false;
+
+    if (this.enemyType === EnemyType.Piranha && !this.piranhaHidden) {
+      return false;
+    }
+
+    if (this.enemyType === EnemyType.Boss) {
+      this.bossHp -= 1;
+      this.scene.tweens.add({
+        targets: this,
+        alpha: 0.4,
+        duration: 80,
+        yoyo: true,
+      });
+      if (this.bossHp <= 0) {
+        this.defeat();
+      }
+      return true;
+    }
+
+    if (this.enemyType === EnemyType.Flyer) {
+      this.enemyType = EnemyType.Walker;
+      this.setTexture('enemy-walker');
+      const body = this.body as Phaser.Physics.Arcade.Body;
+      body.setAllowGravity(true);
+      body.setSize(24, 20);
+      body.setOffset(2, 2);
+      body.setVelocityX(this.direction * ENEMY_WALKER_SPEED);
+      return true;
+    }
 
     if (this.enemyType === EnemyType.Shell && !this.isShell) {
       this.isShell = true;
@@ -177,6 +256,14 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
     const falling = playerBody.velocity.y > 0;
     const playerBottom = playerBody.bottom;
     const enemyTop = (this.body as Phaser.Physics.Arcade.Body).top;
+
+    if (this.enemyType === EnemyType.Piranha && !this.piranhaHidden) {
+      if (player.isStarPowered) {
+        this.defeat();
+        return 'none';
+      }
+      return 'hurt';
+    }
 
     if (falling && playerBottom <= enemyTop + 12) {
       return 'stomp';
