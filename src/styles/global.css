@@ -654,6 +654,11 @@ body {
   visibility: visible;
 }
 
+/* Arcade: Phaser canvas must sit above cabinet bezel (z 18); chrome stays outside CRT bounds */
+.app-shell--arcade #game-container.game-container--live {
+  z-index: 19;
+}
+
 #game-container canvas {
   display: block;
   image-rendering: pixelated;

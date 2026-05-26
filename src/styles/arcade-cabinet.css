@@ -341,6 +341,10 @@
   pointer-events: none;
 }
 
+.cabinet-crt-vignette--overlay {
+  z-index: 28;
+}
+
 .cabinet-crt-scanlines--overlay {
   position: absolute;
   inset: 0;

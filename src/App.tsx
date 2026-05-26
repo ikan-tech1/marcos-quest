@@ -395,7 +395,10 @@ export function App() {
           style={{ width: scaledW, height: scaledH, left: crtLeft, top: crtTop }}
         >
           {showCabinet && (
-            <div className="cabinet-crt-scanlines cabinet-crt-scanlines--overlay" aria-hidden="true" />
+            <>
+              <div className="cabinet-crt-vignette cabinet-crt-vignette--overlay" aria-hidden="true" />
+              <div className="cabinet-crt-scanlines cabinet-crt-scanlines--overlay" aria-hidden="true" />
+            </>
           )}
           {showCabinet &&
             (screen === 'playing' || screen === 'level-clear' || screen === 'paused') && (
