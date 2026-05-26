@@ -7,6 +7,7 @@ import { CharacterSelect } from './CharacterSelect';
 interface Props {
   soundEnabled: boolean;
   isFullscreen?: boolean;
+  hideCharacterSelect?: boolean;
   selectedCharacterId?: string;
   onCharacterChange?: (characterId: string) => void;
   onToggleSound: () => void;
@@ -16,6 +17,7 @@ interface Props {
 export function PauseOverlay({
   soundEnabled,
   isFullscreen = false,
+  hideCharacterSelect = false,
   selectedCharacterId = Storage.getSelectedCharacter(),
   onCharacterChange,
   onToggleSound,
@@ -51,14 +53,16 @@ export function PauseOverlay({
         <div className="wood-sign-board">
           <h2 className="pause-title">⏸ PAUSED</h2>
           <p className="pause-subtitle">The adventure waits...</p>
-          <CharacterSelect
-            compact
-            selectedId={characterId}
-            onSelect={(id) => {
-              setCharacterId(id);
-              onCharacterChange?.(id);
-            }}
-          />
+          {!hideCharacterSelect && (
+            <CharacterSelect
+              compact
+              selectedId={characterId}
+              onSelect={(id) => {
+                setCharacterId(id);
+                onCharacterChange?.(id);
+              }}
+            />
+          )}
           <div className="pause-actions">
             <button type="button" className="btn-primary btn-primary--wide" onClick={resume}>
               ▶ RESUME
