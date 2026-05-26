@@ -9,13 +9,13 @@ export interface GameLayout {
 }
 
 /**
- * Integer Phaser zoom — cover mode: largest zoom that fills width OR height
- * (slight edge crop on the other axis; no CSS transform scaling).
+ * Integer Phaser zoom — contain mode: largest integer scale that fits entirely
+ * inside the viewport (letterbox margins filled by CSS world backdrop).
  */
 export function computeGameScale(viewportW: number, viewportH: number): number {
   const byWidth = Math.floor(viewportW / GAME_WIDTH);
   const byHeight = Math.floor(viewportH / GAME_HEIGHT);
-  return Math.max(1, byWidth, byHeight);
+  return Math.max(1, Math.min(byWidth, byHeight));
 }
 
 export function computeGameLayout(

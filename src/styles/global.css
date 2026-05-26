@@ -94,26 +94,40 @@ body {
   opacity: 0.85;
 }
 
-/* Fullscreen gameplay: edge-to-edge canvas, dark letterbox */
-.app-shell--gameplay:not(.app-shell--arcade) {
-  background: #000;
+/* Fullscreen gameplay: world backdrop fills letterbox margins */
+.app-shell--fullscreen-play {
+  background: var(--sky-top);
 }
 
-.app-shell--browser-fullscreen {
-  background: #000;
+.app-shell--fullscreen-play .world-sky,
+.app-shell--fullscreen-play .world-clouds,
+.app-shell--fullscreen-play .world-hills,
+.app-shell--fullscreen-play .world-ground {
+  opacity: 1;
 }
 
-.app-shell--browser-fullscreen .world-sky,
-.app-shell--browser-fullscreen .world-sun,
-.app-shell--browser-fullscreen .world-clouds,
-.app-shell--browser-fullscreen .world-hills,
-.app-shell--browser-fullscreen .world-bushes,
-.app-shell--browser-fullscreen .world-floaters,
-.app-shell--browser-fullscreen .world-ground,
-.app-shell--browser-fullscreen .site-footer {
+.app-shell--fullscreen-play .world-sun {
+  opacity: 0.7;
+}
+
+.app-shell--browser-fullscreen.app-shell--fullscreen-play .world-sky,
+.app-shell--browser-fullscreen.app-shell--fullscreen-play .world-clouds,
+.app-shell--browser-fullscreen.app-shell--fullscreen-play .world-hills,
+.app-shell--browser-fullscreen.app-shell--fullscreen-play .world-ground,
+.app-shell--browser-fullscreen.app-shell--fullscreen-play .world-floaters--gameplay {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: none;
+}
+
+.app-shell--browser-fullscreen.app-shell--fullscreen-play .world-sun {
+  opacity: 0.65;
+  visibility: visible;
+}
+
+.app-shell--browser-fullscreen.app-shell--fullscreen-play .site-footer {
   opacity: 0;
   visibility: hidden;
-  pointer-events: none;
 }
 
 .app-shell--gameplay .game-viewport {
@@ -121,29 +135,15 @@ body {
 }
 
 .app-shell--gameplay .game-viewport--fullscreen .overlay-hud {
-  padding: 6px 8px;
+  padding: 0;
 }
 
-.app-shell--gameplay .hud-plank {
-  padding: 4px 8px;
+.app-shell--gameplay .overlay-hud--compact {
+  padding: 0;
 }
 
-.app-shell--gameplay .hud-plank--left,
-.app-shell--gameplay .hud-plank--right {
-  min-width: 80px;
-}
-
-.app-shell--gameplay .hud-value {
-  font-size: 0.48rem;
-}
-
-.app-shell--gameplay .hud-controls {
-  top: 6px;
-  right: 6px;
-}
-
-.app-shell--browser-fullscreen .overlay-hud {
-  padding-top: max(6px, env(safe-area-inset-top, 0px));
+.app-shell--browser-fullscreen .overlay-hud--compact {
+  padding-top: max(0px, env(safe-area-inset-top, 0px));
 }
 
 .app-shell[data-transition='out'] .screen-layer,
@@ -818,6 +818,12 @@ body {
   flex-direction: column;
   gap: 8px;
   margin: 8px 0;
+  animation: title-bounce 2.5s ease-in-out infinite;
+}
+
+@keyframes title-bounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-6px); }
 }
 
 .title-line {
@@ -1295,8 +1301,8 @@ body {
 }
 
 @keyframes sparkle-burst {
-  0% { transform: translate(-50%, -50%) rotate(calc(var(--i) * 45deg)) translateY(0); opacity: 1; }
-  100% { transform: translate(-50%, -50%) rotate(calc(var(--i) * 45deg)) translateY(-80px); opacity: 0; }
+  0% { transform: translate(-50%, -50%) rotate(calc(var(--i) * 45deg)) translateY(0) scale(0.5); opacity: 1; }
+  100% { transform: translate(-50%, -50%) rotate(calc(var(--i) * 45deg)) translateY(-80px) scale(1.5); opacity: 0; }
 }
 
 @keyframes pulse-glow {
@@ -1912,6 +1918,97 @@ body {
 .hud-icon-btn:active {
   transform: translateY(2px);
   box-shadow: 0 1px 0 #2a1810;
+}
+
+/* Compact fullscreen HUD — single slim bar, controls inline */
+.overlay-hud--compact {
+  justify-content: flex-start;
+}
+
+.hud-bar--compact {
+  align-items: stretch;
+  gap: 6px;
+  padding: 4px 6px;
+  background: linear-gradient(
+    180deg,
+    rgba(26, 16, 8, 0.82) 0%,
+    rgba(74, 55, 40, 0.72) 100%
+  );
+  border-bottom: 3px solid rgba(0, 0, 0, 0.45);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+  backdrop-filter: blur(4px);
+}
+
+.hud-compact-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  pointer-events: none;
+}
+
+.hud-compact-group--left {
+  flex-shrink: 0;
+}
+
+.hud-compact-group--center {
+  flex: 1;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 6px 10px;
+  min-width: 0;
+}
+
+.hud-compact-group--center .hud-world {
+  margin-bottom: 0;
+  font-size: 0.38rem;
+}
+
+.hud-compact-group--center .hud-time {
+  margin-bottom: 0;
+  font-size: 0.36rem;
+}
+
+.hud-compact-group--controls {
+  flex-shrink: 0;
+  pointer-events: auto;
+  gap: 4px;
+}
+
+.hud-compact-stat {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-family: 'Press Start 2P', monospace;
+}
+
+.hud-compact-stat .hud-label {
+  display: inline;
+  margin-bottom: 0;
+  font-size: 0.28rem;
+}
+
+.hud-compact-stat .hud-value {
+  font-size: 0.42rem;
+}
+
+.hud-bar--compact .hud-icon-btn {
+  width: 28px;
+  height: 28px;
+  font-size: 12px;
+}
+
+.app-shell--fullscreen-play .game-viewport--fullscreen {
+  box-shadow:
+    0 0 0 3px rgba(85, 139, 47, 0.85),
+    0 0 0 6px rgba(0, 0, 0, 0.35),
+    0 8px 32px rgba(0, 0, 0, 0.35);
+}
+
+.app-shell--fullscreen-play #game-container.game-container--live {
+  box-shadow:
+    0 0 0 3px rgba(85, 139, 47, 0.85),
+    0 0 0 6px rgba(0, 0, 0, 0.35),
+    0 8px 32px rgba(0, 0, 0, 0.35);
 }
 
 /* ─── Touch controls (world-themed) ─── */

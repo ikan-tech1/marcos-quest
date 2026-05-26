@@ -88,6 +88,8 @@ export function App() {
   const isArcadeView = effectiveViewMode === 'arcade';
   const showCabinet = showGameViewport && isArcadeView && !isFullscreen;
   const showGameplayBackdrop = showGameViewport || showHeroWorld;
+  const showFullscreenGameplay =
+    showGameViewport && !showCabinet && effectiveViewMode === 'fullscreen';
 
   const transitionTo = useCallback((next: GameScreen, data?: unknown) => {
     setScreenVisible(false);
@@ -276,7 +278,7 @@ export function App() {
   return (
     <div
       ref={shellRef}
-      className={`app-shell app-shell--${screen}${showGameViewport ? ' app-shell--gameplay' : ' app-shell--hero'}${showCabinet ? ' app-shell--arcade' : ''}${isFullscreen ? ' app-shell--browser-fullscreen' : ''}`}
+      className={`app-shell app-shell--${screen}${showGameViewport ? ' app-shell--gameplay' : ' app-shell--hero'}${showCabinet ? ' app-shell--arcade' : ''}${showFullscreenGameplay ? ' app-shell--fullscreen-play' : ''}${isFullscreen ? ' app-shell--browser-fullscreen' : ''}`}
       data-transition={screenVisible ? 'in' : 'out'}
     >
       {showGameplayBackdrop && (
@@ -318,6 +320,19 @@ export function App() {
                 <div className="floater floater-pipe floater-pipe-right" />
               </div>
             </>
+          )}
+          {showFullscreenGameplay && (
+            <div className="world-floaters world-floaters--gameplay" aria-hidden="true">
+              <div className="cloud cloud-static cloud-g1" />
+              <div className="cloud cloud-static cloud-g2" />
+              <div className="floater floater-coin floater-g1" />
+              <div className="floater floater-coin floater-g2" />
+              <div className="floater floater-coin floater-g3" />
+              <div className="floater floater-qblock floater-g4" />
+              <div className="floater floater-brick floater-g5" />
+              <div className="floater floater-pipe floater-g-pipe-l" />
+              <div className="floater floater-pipe floater-g-pipe-r" />
+            </div>
           )}
           <div className="world-ground" aria-hidden="true">
             <div className="ground-grass" />
@@ -370,6 +385,7 @@ export function App() {
               hud={hud}
               viewMode={effectiveViewMode}
               isFullscreen={isFullscreen}
+              compact={!showCabinet}
               showControls={!showCabinet}
               onPause={() => GameBridge.emit('pause-game')}
               onToggleFullscreen={handleToggleFullscreen}

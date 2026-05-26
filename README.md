@@ -31,7 +31,8 @@ A next-gen Mario-style platformer built with **Phaser 4**, **React**, and **Type
 - Score Master toast at 10,000 points
 
 ### Frontend
-- **Full-viewport immersive shell** — game scales to max integer Phaser zoom (crisp pixels, no CSS canvas scale); cinematic sky letterboxing on ultrawide/tall screens
+- **Full-viewport immersive shell (default)** — game scales to max integer Phaser zoom (crisp pixels, no CSS canvas scale); cinematic sky letterboxing on ultrawide/tall screens
+- **Optional Arcade View** — toggle a retro cabinet with neon marquee, CRT bezel, side art, control panel, and synced score/lives/coin LED; see [Arcade View](#arcade-view) below
 - **Hero title screen** — full-world parallax sky, hills, pipes, and floating blocks behind wooden sign menus (not a tiny embedded widget)
 - **In-world UI panels** — wood-sign pause/game-over menus, plank HUD, grass-corner viewport frame, world-themed touch controls
 - **Screen transitions** — fade/scale between loading, menu, gameplay, pause, level clear, and game over
@@ -59,6 +60,60 @@ A next-gen Mario-style platformer built with **Phaser 4**, **React**, and **Type
 | Enter / Click | Start / confirm |
 
 On mobile, use the on-screen touch buttons.
+
+## Arcade View
+
+**Default:** full-viewport gameplay with HUD overlay. **Arcade View** is an optional alternate presentation — same game, same characters, same controls.
+
+### When to use each mode
+
+| Mode | Best for |
+|------|----------|
+| **Fullscreen (default)** | Maximum screen real estate, ultrawide/tall displays, first-time players |
+| **Arcade View** | Retro cabinet aesthetic, stream overlays, showing off the “real arcade” vibe |
+
+### How to enable
+
+1. **Title menu** — toggle **🕹 Arcade Mode ON/OFF** (saved to `localStorage`)
+2. **In-game (fullscreen mode)** — click the **🕹** button in the top-right HUD
+3. **In-game (arcade mode)** — use the marquee buttons (view / pause / browser fullscreen)
+
+Press **F** for browser fullscreen in either view mode.
+
+### Cabinet layout
+
+```
+┌─────────────────────────────────────┐
+│  MARQUEE — EASHAN'S QUEST + hero    │  ← neon title, world label, pause/fullscreen
+├────┬─────────────────────────┬──────┤
+│SIDE│   CRT BEZEL + GAME      │ SIDE │  ← kingdom pixel side art
+│ART │   (integer Phaser zoom) │ ART  │
+├────┴─────────────────────────┴──────┤
+│  CONTROL PANEL — joystick, buttons  │  ← decorative; matches real keys
+│  COIN LED · LIVES · SCORE STRIP     │  ← synced live from GameBridge HUD
+└─────────────────────────────────────┘
+         ▓▓▓ cabinet base ▓▓▓
+    ░░░ dim arcade room floor ░░░       ← spotlight + tile floor, not void
+```
+
+### Synced elements
+
+- **Score strip** under CRT bezel (score, timer, high score)
+- **Life lights** (3 icons) on control panel
+- **Coin slot LED** — glows on collect with pulse animation
+- **World label** on marquee updates per level
+- **Hero name** shown under neon title
+- **Cabinet glow** when actively playing
+
+### Zoom / crisp pixels
+
+The Phaser canvas is positioned inside the CRT cutout. Scale uses **integer Phaser `setZoom()` only** — no CSS `transform: scale()` on the canvas. Switching view modes recalculates zoom for the new available CRT dimensions.
+
+### Implementation notes
+
+- Arcade cabinet mounts only when view mode is `arcade` and gameplay is active — does not wrap Phaser boot
+- `GameBridge` replays screen/HUD state to new subscribers so loading is never blocked
+- Four playable characters work identically in both modes
 
 ## Getting Started
 
@@ -90,8 +145,11 @@ Deploys automatically to **Vercel** via GitHub integration.
 
 ```
 src/
-├── App.tsx              # React shell + Phaser mount + world background
-├── ui/                  # React overlays (Menu, HUD, Pause, GameOver, Touch)
+├── App.tsx              # React shell + Phaser mount + view mode routing
+├── config/
+│   ├── cabinetLayout.ts # Arcade CRT + cabinet geometry + zoom
+│   └── gameLayout.ts    # Fullscreen integer zoom layout
+├── ui/                  # React overlays (Menu, HUD, ArcadeCabinet, Pause, …)
 ├── entities/            # Player, Enemy, MovingPlatform, Projectile
 ├── objects/             # Block, Coin, PowerUp, Pipe
 ├── systems/             # Input, Audio, GameState, EasterEggs, Storage, GameBridge

@@ -85,6 +85,7 @@ export const LEVELS: LevelData[] = [
       '..............................................................................F',
       '....................???.......................................................F',
       '..............................................................................F',
+      '....................BBB.......................................................F',
       '..............====............................................................F',
       '..............................................................................F',
       '....H.........................................................................F',
@@ -100,12 +101,14 @@ export const LEVELS: LevelData[] = [
       { x: 12, y: 8 }, { x: 13, y: 8 }, { x: 14, y: 8 },
       { x: 30, y: 5 }, { x: 31, y: 5 }, { x: 32, y: 5 },
       { x: 55, y: 9 }, { x: 56, y: 9 },
+      { x: 38, y: 11 }, { x: 39, y: 11 }, { x: 40, y: 11 },
     ],
     blockContents: [
       { tileX: 20, tileY: 7, contents: PowerUpType.Spark },
       { tileX: 21, tileY: 7, contents: 'coin' },
       { tileX: 22, tileY: 7, contents: 'coin' },
       { tileX: 4, tileY: 11, contents: PowerUpType.OneUp },
+      { tileX: 38, tileY: 10, contents: 'coin' },
     ],
     movingPlatforms: [{ tileX: 30, tileY: 9, width: 3, range: 80, speed: 1.2, axis: 'x' }],
   },
@@ -289,12 +292,14 @@ export const LEVELS: LevelData[] = [
     coins: [
       { x: 8, y: 8 }, { x: 9, y: 8 }, { x: 10, y: 8 },
       { x: 35, y: 6 }, { x: 36, y: 6 }, { x: 37, y: 6 },
+      { x: 52, y: 9 }, { x: 53, y: 9 }, { x: 54, y: 9 },
     ],
     blockContents: [
       { tileX: 19, tileY: 2, contents: 'coin' },
       { tileX: 20, tileY: 2, contents: 'coin' },
-      { tileX: 21, tileY: 2, contents: 'coin' },
+      { tileX: 21, tileY: 2, contents: PowerUpType.Spark },
       { tileX: 32, tileY: 12, contents: PowerUpType.OneUp },
+      { tileX: 52, tileY: 10, contents: 'coin' },
     ],
     pipes: [
       { entryX: 6, entryY: 12, exitX: 48, exitY: 10, secret: true },

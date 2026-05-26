@@ -76,7 +76,7 @@ const BLAZE_PALETTES: Record<string, CharColors> = {
   zap: { ...PALETTES.zap, head: 0xffff00, headShade: 0xcccc00, body: 0xffee44, bodyShade: 0xffcc00 },
 };
 
-type Pose = 'idle' | 'run1' | 'run2';
+type Pose = 'idle' | 'run1' | 'run2' | 'run3';
 
 function drawEashan(g: Phaser.GameObjects.Graphics, c: CharColors, big: boolean, pose: Pose): void {
   const h = big ? 48 : 28;
@@ -102,12 +102,13 @@ function drawEashan(g: Phaser.GameObjects.Graphics, c: CharColors, big: boolean,
   g.fillRect(16, big ? 12 : 10, 4, big ? 20 : 10);
   g.fillStyle(c.accent, 1);
   g.fillRect(10, big ? 14 : 11, 4, big ? 6 : 4);
-  // Boots
-  const lFoot = pose === 'run1' ? 0 : pose === 'run2' ? 2 : 0;
-  const rFoot = pose === 'run1' ? 2 : pose === 'run2' ? 0 : 0;
+  // Boots — 3-frame run cycle
+  const lFoot = pose === 'run1' ? 0 : pose === 'run2' ? 2 : pose === 'run3' ? 1 : 0;
+  const rFoot = pose === 'run1' ? 2 : pose === 'run2' ? 0 : pose === 'run3' ? 1 : 0;
+  const bounce = pose === 'run3' ? -3 : pose === 'run1' || pose === 'run2' ? -1 : 0;
   g.fillStyle(c.boots, 1);
-  g.fillRect(5 + lFoot, h - 6 + (pose === 'run2' ? -2 : 0), 5, 6);
-  g.fillRect(14 - rFoot, h - 6 + (pose === 'run1' ? -2 : 0), 5, 6);
+  g.fillRect(5 + lFoot, h - 6 + bounce, 5, 6);
+  g.fillRect(14 - rFoot, h - 6 + bounce, 5, 6);
   g.fillStyle(c.bootsShade, 1);
   g.fillRect(5 + lFoot, h - 2, 5, 2);
   g.fillRect(14 - rFoot, h - 2, 5, 2);
@@ -246,6 +247,10 @@ function generateCharacterTextures(
     drawer(g, colors, big, 'run2');
     g.generateTexture(`${prefix}-run2`, w, h);
     g.clear();
+
+    drawer(g, colors, big, 'run3');
+    g.generateTexture(`${prefix}-run3`, w, h);
+    g.clear();
   }
 }
 
@@ -272,9 +277,15 @@ export function generateTextures(scene: Phaser.Scene): void {
 
   g.fillStyle(0xc84b0a, 1);
   g.fillRect(0, 0, 32, 32);
+  g.fillStyle(0x9a3808, 1);
+  g.fillRect(0, 0, 32, 4);
+  g.fillRect(0, 28, 32, 4);
   g.fillStyle(0xe8651a, 1);
   g.fillRect(2, 2, 14, 14);
   g.fillRect(16, 16, 14, 14);
+  g.fillStyle(0xff8844, 0.4);
+  g.fillRect(3, 3, 6, 6);
+  g.fillRect(17, 17, 6, 6);
   g.lineStyle(2, 0x8b2e00, 1);
   g.strokeRect(1, 1, 30, 30);
   g.lineStyle(1, 0x6b2200, 0.5);
@@ -308,7 +319,18 @@ export function generateTextures(scene: Phaser.Scene): void {
   g.generateTexture('tile-question-used', 32, 32);
   g.clear();
 
-  drawRect(g, 32, 32, 0x228b22, 0x145214);
+  g.fillStyle(0x1a6b1a, 1);
+  g.fillRect(0, 0, 32, 32);
+  g.fillStyle(0x228b22, 1);
+  g.fillRect(2, 0, 28, 32);
+  g.fillStyle(0x2ecc40, 1);
+  g.fillRect(4, 2, 8, 28);
+  g.fillStyle(0x44ff66, 0.35);
+  g.fillRect(6, 4, 3, 20);
+  g.fillStyle(0x145214, 1);
+  g.fillRect(24, 0, 6, 32);
+  g.lineStyle(2, 0x0d3d0d, 1);
+  g.strokeRect(1, 1, 30, 30);
   g.generateTexture('tile-pipe', 32, 32);
   g.clear();
 
@@ -335,16 +357,32 @@ export function generateTextures(scene: Phaser.Scene): void {
     generateCharacterTextures(g, character.id);
   }
 
-  // Walker enemy (28x24)
-  g.fillStyle(0x8b4513, 1);
-  g.fillEllipse(14, 14, 26, 20);
-  g.fillStyle(0xffffff, 1);
-  g.fillCircle(8, 10, 4);
-  g.fillCircle(20, 10, 4);
-  g.fillStyle(0x000000, 1);
-  g.fillCircle(9, 10, 2);
-  g.fillCircle(21, 10, 2);
+  // Walker enemy — idle + walk cycle (28x24)
+  const drawWalker = (legOff: number) => {
+    g.fillStyle(0x6b3410, 1);
+    g.fillEllipse(14, 16, 24, 12);
+    g.fillStyle(0x8b4513, 1);
+    g.fillEllipse(14, 13, 26, 18);
+    g.fillStyle(0xa0522d, 1);
+    g.fillEllipse(14, 10, 20, 14);
+    g.fillStyle(0xffffff, 1);
+    g.fillCircle(8, 10, 4);
+    g.fillCircle(20, 10, 4);
+    g.fillStyle(0x000000, 1);
+    g.fillCircle(9, 10, 2);
+    g.fillCircle(21, 10, 2);
+    g.fillStyle(0x5c3317, 1);
+    g.fillRect(6 + legOff, 20, 5, 4);
+    g.fillRect(17 - legOff, 20, 5, 4);
+  };
+  drawWalker(0);
   g.generateTexture('enemy-walker', 28, 24);
+  g.clear();
+  drawWalker(2);
+  g.generateTexture('enemy-walker-run1', 28, 24);
+  g.clear();
+  drawWalker(-2);
+  g.generateTexture('enemy-walker-run2', 28, 24);
   g.clear();
 
   // Shell enemy (28x24)
@@ -361,33 +399,61 @@ export function generateTextures(scene: Phaser.Scene): void {
   g.generateTexture('enemy-shell-only', 28, 24);
   g.clear();
 
-  g.fillStyle(0x9b59b6, 1);
-  g.fillEllipse(14, 12, 24, 16);
-  g.fillStyle(0xe74c3c, 1);
-  g.fillCircle(8, 8, 3);
-  g.fillCircle(20, 8, 3);
+  const drawFlyer = (wingUp: boolean) => {
+    g.fillStyle(0x7d3c98, 1);
+    g.fillEllipse(14, 12, 20, 14);
+    g.fillStyle(0x9b59b6, 1);
+    g.fillEllipse(14, 11, 18, 12);
+    g.fillStyle(wingUp ? 0xc39bd3 : 0x8e44ad, 1);
+    g.fillEllipse(5, 10, 12, wingUp ? 6 : 10);
+    g.fillEllipse(23, 10, 12, wingUp ? 6 : 10);
+    g.fillStyle(0xe74c3c, 1);
+    g.fillCircle(8, 8, 3);
+    g.fillCircle(20, 8, 3);
+    g.fillStyle(0xffffff, 0.8);
+    g.fillCircle(7, 7, 1);
+    g.fillCircle(19, 7, 1);
+  };
+  drawFlyer(true);
   g.generateTexture('enemy-flyer', 28, 20);
   g.clear();
-
-  g.fillStyle(0xcc8800, 1);
-  g.fillCircle(8, 8, 7);
-  g.fillStyle(0xffd700, 1);
-  g.fillCircle(8, 8, 6);
-  g.fillStyle(0xfff8dc, 1);
-  g.fillCircle(6, 6, 2);
-  g.fillCircle(10, 5, 1);
-  g.fillStyle(0xffaa00, 0.8);
-  g.fillRect(10, 3, 2, 9);
-  g.generateTexture('coin', 16, 16);
+  drawFlyer(false);
+  g.generateTexture('enemy-flyer-wing', 28, 20);
   g.clear();
 
-  g.fillStyle(0xcc8800, 1);
-  g.fillEllipse(8, 8, 5, 7);
-  g.fillStyle(0xffd700, 1);
-  g.fillEllipse(8, 8, 3, 6);
-  g.fillStyle(0xfff8dc, 0.9);
-  g.fillRect(7, 4, 2, 4);
+  const drawCoinFrame = (frame: 0 | 1 | 2) => {
+    if (frame === 0) {
+      g.fillStyle(0xcc8800, 1);
+      g.fillCircle(8, 8, 7);
+      g.fillStyle(0xffd700, 1);
+      g.fillCircle(8, 8, 6);
+      g.fillStyle(0xfff8dc, 1);
+      g.fillCircle(6, 6, 2);
+      g.fillCircle(10, 5, 1);
+      g.fillStyle(0xffffff, 0.5);
+      g.fillRect(5, 4, 3, 2);
+    } else if (frame === 1) {
+      g.fillStyle(0xcc8800, 1);
+      g.fillEllipse(8, 8, 4, 7);
+      g.fillStyle(0xffd700, 1);
+      g.fillEllipse(8, 8, 2, 6);
+      g.fillStyle(0xfff8dc, 0.9);
+      g.fillRect(7, 4, 2, 4);
+    } else {
+      g.fillStyle(0xcc8800, 1);
+      g.fillRect(7, 2, 2, 12);
+      g.fillStyle(0xffd700, 1);
+      g.fillRect(7, 3, 2, 10);
+    }
+  };
+  drawCoinFrame(0);
+  g.generateTexture('coin', 16, 16);
+  g.clear();
+  drawCoinFrame(1);
   g.generateTexture('coin-side', 16, 16);
+  g.clear();
+  drawCoinFrame(2);
+  g.generateTexture('coin-thin', 16, 16);
   g.clear();
 
   g.fillStyle(0xff4444, 1);
@@ -456,33 +522,37 @@ export function generateTextures(scene: Phaser.Scene): void {
   g.clear();
 
   g.fillStyle(0x66bb6a, 1);
-  for (let x = -30; x < 830; x += 52) {
-    g.fillEllipse(x + 26, 100, 64, 44);
-    g.fillEllipse(x + 48, 96, 42, 32);
+  for (let x = -40; x < 840; x += 48) {
+    const h = 38 + (x % 96 === 0 ? 8 : 0);
+    g.fillEllipse(x + 24, 118 - h * 0.15, 56, h);
+    g.fillEllipse(x + 44, 114 - h * 0.1, 36, h * 0.72);
+    g.fillEllipse(x + 8, 116 - h * 0.12, 32, h * 0.65);
   }
   g.fillStyle(0x43a047, 1);
-  for (let x = 0; x < 820; x += 68) {
-    g.fillEllipse(x + 34, 108, 78, 38);
+  for (let x = -20; x < 820; x += 64) {
+    g.fillEllipse(x + 32, 112, 72, 34);
   }
-  g.fillStyle(0x2e7d32, 0.85);
-  for (let x = 20; x < 800; x += 90) {
-    g.fillEllipse(x + 20, 112, 36, 22);
-    g.fillEllipse(x + 50, 110, 28, 18);
+  g.fillStyle(0x388e3c, 0.9);
+  for (let x = 10; x < 810; x += 80) {
+    g.fillEllipse(x + 18, 118, 28, 16);
+    g.fillEllipse(x + 46, 115, 24, 14);
   }
+  g.lineStyle(1, 0x2e7d32, 0.35);
+  g.lineBetween(0, 119, 800, 119);
   g.generateTexture('bg-hills', 800, 120);
   g.clear();
 
-  g.fillStyle(0x1b5e3a, 0.55);
-  for (let x = -40; x < 840; x += 100) {
-    g.fillEllipse(x + 50, 130, 110, 70);
+  g.fillStyle(0x1b5e3a, 0.5);
+  for (let x = -60; x < 860; x += 110) {
+    g.fillEllipse(x + 55, 132, 100, 62);
   }
-  g.fillStyle(0x0d4a32, 0.75);
-  for (let x = 0; x < 800; x += 120) {
-    g.fillEllipse(x + 60, 120, 95, 85);
+  g.fillStyle(0x0d4a32, 0.7);
+  for (let x = -10; x < 810; x += 130) {
+    g.fillEllipse(x + 65, 122, 88, 78);
   }
-  g.fillStyle(0x063d28, 0.9);
-  for (let x = 30; x < 780; x += 140) {
-    g.fillEllipse(x + 70, 105, 80, 95);
+  g.fillStyle(0x063d28, 0.85);
+  for (let x = 40; x < 780; x += 150) {
+    g.fillEllipse(x + 60, 108, 72, 88);
   }
   g.generateTexture('bg-mountains', 800, 150);
   g.clear();
@@ -500,9 +570,18 @@ export function generateTextures(scene: Phaser.Scene): void {
   g.generateTexture('tile-used', 32, 32);
   g.clear();
 
-  drawRect(g, 32, 32, 0x4a3728);
-  g.fillStyle(0x6b5344, 1);
-  g.fillRect(2, 2, 28, 8);
+  // Underground — darker palette with stone grain
+  g.fillStyle(0x2a1a10, 1);
+  g.fillRect(0, 0, 32, 32);
+  g.fillStyle(0x4a3728, 1);
+  g.fillRect(0, 8, 32, 24);
+  g.fillStyle(0x5c4033, 1);
+  g.fillRect(2, 10, 12, 8);
+  g.fillRect(18, 18, 12, 8);
+  g.fillStyle(0x3d2817, 1);
+  g.fillRect(14, 14, 4, 4);
+  g.lineStyle(1, 0x1a0f08, 0.6);
+  for (let y = 8; y < 32; y += 8) g.lineBetween(0, y, 32, y);
   g.generateTexture('tile-ground-underground', 32, 32);
   g.clear();
 
@@ -523,8 +602,14 @@ export function generateTextures(scene: Phaser.Scene): void {
   g.clear();
 
   drawRect(g, 32, 32, 0x44aa44, 0x228822);
+  g.fillStyle(0x66cc66, 1);
+  g.fillRect(6, 6, 20, 4);
+  g.fillRect(6, 14, 20, 4);
+  g.fillRect(6, 22, 20, 4);
   g.fillStyle(0xffffff, 1);
-  g.fillRect(8, 10, 16, 12);
+  g.fillRect(10, 8, 12, 8);
+  g.fillStyle(0xcccccc, 1);
+  g.fillRect(12, 10, 8, 4);
   g.generateTexture('tile-spring', 32, 32);
   g.clear();
 
