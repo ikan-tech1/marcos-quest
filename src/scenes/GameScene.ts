@@ -17,6 +17,7 @@ import { InputManager } from '../systems/InputManager';
 import { AudioManager } from '../systems/AudioManager';
 import { GameState } from '../systems/GameState';
 import { GameBridge } from '../systems/GameBridge';
+import { Storage } from '../systems/Storage';
 import { LEVELS } from '../levels/levelData';
 import { LevelBuilder } from '../levels/LevelBuilder';
 import { screenShake, spawnDebris, spawnSparkle } from '../utils/effects';
@@ -40,6 +41,7 @@ export class GameScene extends Phaser.Scene {
   private levelComplete = false;
   private fireCooldown = 0;
   private cameraLookAhead = 0;
+  private paused = false;
 
   constructor() {
     super({ key: 'GameScene' });
@@ -61,7 +63,17 @@ export class GameScene extends Phaser.Scene {
   create(): void {
     this.inputManager = new InputManager(this);
     this.audio = new AudioManager(this);
-    this.audio.startGameMusic();
+    this.audio.setEnabled(Storage.getSoundEnabled());
+    if (Storage.getSoundEnabled()) {
+      this.audio.startGameMusic();
+    }
+
+    const unsubSound = GameBridge.on('sound-toggle', (data) => {
+      const { enabled } = data as { enabled: boolean };
+      this.audio.setEnabled(enabled);
+      if (enabled && !this.paused) this.audio.startGameMusic();
+    });
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => unsubSound());
 
     GameBridge.setScreen('playing');
 
@@ -82,6 +94,7 @@ export class GameScene extends Phaser.Scene {
     this.builtLevel = LevelBuilder.build(this, this.levelData);
     this.blocks = this.builtLevel.blocks;
     this.enemies = LevelBuilder.spawnEnemies(this, this.levelData);
+    this.enemies.forEach((e) => e.setGroundLayer(this.builtLevel.groundLayer));
     this.coins = LevelBuilder.spawnCoins(this, this.levelData);
     this.movingPlatforms = LevelBuilder.spawnMovingPlatforms(this, this.levelData);
 
@@ -140,8 +153,38 @@ export class GameScene extends Phaser.Scene {
     cam.setDeadzone(100, 60);
 
     this.events.on('player-died', () => this.handlePlayerDeath());
+    this.events.on('toggle-pause', () => this.togglePause());
+    this.events.on('resume-game', () => this.resumeGame());
+    this.events.on('restart-level', () => this.restartLevel());
     this.physics.world.gravity.y = GRAVITY;
     this.syncHud();
+  }
+
+  private togglePause(): void {
+    if (this.levelComplete) return;
+    if (this.paused) {
+      this.resumeGame();
+    } else {
+      this.paused = true;
+      this.physics.pause();
+      this.player.setVelocity(0, 0);
+      GameBridge.setScreen('paused');
+    }
+  }
+
+  private resumeGame(): void {
+    if (!this.paused) return;
+    this.paused = false;
+    this.physics.resume();
+    GameBridge.setScreen('playing');
+  }
+
+  private restartLevel(): void {
+    this.paused = false;
+    this.physics.resume();
+    GameState.combo = 0;
+    GameState.comboTimer = 0;
+    this.scene.restart({ levelIndex: this.levelIndex });
   }
 
   private syncHud(): void {
@@ -152,6 +195,9 @@ export class GameScene extends Phaser.Scene {
       world: this.levelData.name,
       combo: GameState.combo,
       comboMultiplier: GameState.comboMultiplier,
+      levelIndex: this.levelIndex,
+      totalLevels: LEVELS.length,
+      highScore: GameState.highScore,
     });
   }
 
@@ -165,6 +211,13 @@ export class GameScene extends Phaser.Scene {
 
   update(_time: number, delta: number): void {
     if (this.levelComplete) return;
+
+    if (this.inputManager.pausePressed) {
+      this.togglePause();
+      return;
+    }
+
+    if (this.paused) return;
 
     this.player.update(_time, delta);
     this.enemies.forEach((e) => e.update(_time, delta));
@@ -294,8 +347,14 @@ export class GameScene extends Phaser.Scene {
       this.time.delayedCall(2500, () => {
         GameState.nextLevel();
         if (GameState.currentLevel >= LEVELS.length) {
+          const { highScore, isNewRecord } = GameState.recordHighScore();
           this.audio.stopMusic();
-          GameBridge.setScreen('game-over', { won: true, score: GameState.score });
+          GameBridge.setScreen('game-over', {
+            won: true,
+            score: GameState.score,
+            highScore,
+            isNewRecord,
+          });
           this.scene.stop();
         } else {
           this.scene.restart({ levelIndex: GameState.currentLevel });
@@ -314,8 +373,14 @@ export class GameScene extends Phaser.Scene {
     this.time.delayedCall(1000, () => {
       const gameOver = GameState.loseLife();
       if (gameOver) {
+        const { highScore, isNewRecord } = GameState.recordHighScore();
         this.audio.stopMusic();
-        GameBridge.setScreen('game-over', { won: false, score: GameState.score });
+        GameBridge.setScreen('game-over', {
+          won: false,
+          score: GameState.score,
+          highScore,
+          isNewRecord,
+        });
         this.scene.stop();
       } else {
         this.scene.restart({ levelIndex: this.levelIndex });

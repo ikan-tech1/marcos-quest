@@ -5,13 +5,18 @@ import { BootScene } from './scenes/BootScene';
 import { PreloadScene } from './scenes/PreloadScene';
 import { GameScene } from './scenes/GameScene';
 import { GameBridge } from './systems/GameBridge';
-import type { GameOverState, GameScreen, HudState } from './systems/GameBridge';
+import type { GameOverState, GameScreen, HudState, StartGamePayload } from './systems/GameBridge';
 import { GameState } from './systems/GameState';
+import { Storage } from './systems/Storage';
+import { VirtualInput } from './systems/VirtualInput';
+import { LEVELS } from './levels/levelData';
 import { MenuOverlay } from './ui/MenuOverlay';
 import { HUD } from './ui/HUD';
 import { GameOverOverlay } from './ui/GameOverOverlay';
 import { LoadingOverlay } from './ui/LoadingOverlay';
 import { LevelClearOverlay } from './ui/LevelClearOverlay';
+import { PauseOverlay } from './ui/PauseOverlay';
+import { TouchControls } from './ui/TouchControls';
 
 const defaultHud: HudState = {
   score: 0,
@@ -20,6 +25,9 @@ const defaultHud: HudState = {
   world: '',
   combo: 0,
   comboMultiplier: 1,
+  levelIndex: 0,
+  totalLevels: LEVELS.length,
+  highScore: Storage.getHighScore(),
 };
 
 const GROUND_STRIP_PX = 64;
@@ -38,17 +46,35 @@ function computeGameScale(immersive: boolean): number {
   );
 }
 
+function isTouchDevice(): boolean {
+  return 'ontouchstart' in window || window.matchMedia('(pointer: coarse)').matches;
+}
+
+function emitToGameScene(event: string): void {
+  const scene = gameRefStatic.current?.scene.getScene('GameScene');
+  scene?.events.emit(event);
+}
+
+const gameRefStatic = { current: null as Phaser.Game | null };
+
 export function App() {
   const gameRef = useRef<Phaser.Game | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const stageRef = useRef<HTMLDivElement>(null);
   const [screen, setScreen] = useState<GameScreen>('loading');
   const [hud, setHud] = useState<HudState>(defaultHud);
-  const [gameOver, setGameOver] = useState<GameOverState>({ won: false, score: 0 });
+  const [gameOver, setGameOver] = useState<GameOverState>({
+    won: false,
+    score: 0,
+    highScore: Storage.getHighScore(),
+    isNewRecord: false,
+  });
   const [tilt, setTilt] = useState({ x: 0, y: 0 });
   const [gameScale, setGameScale] = useState(1);
+  const [soundEnabled, setSoundEnabled] = useState(Storage.getSoundEnabled());
+  const [showTouch, setShowTouch] = useState(false);
 
-  const isCrispStage = screen === 'playing' || screen === 'level-clear';
+  const isCrispStage = screen === 'playing' || screen === 'level-clear' || screen === 'paused';
 
   const initGame = useCallback(() => {
     if (gameRef.current || !containerRef.current) return;
@@ -68,13 +94,16 @@ export function App() {
       scale: { mode: Phaser.Scale.NONE },
       scene: [BootScene, PreloadScene, GameScene],
     });
+    gameRefStatic.current = gameRef.current;
   }, []);
 
   useEffect(() => {
     initGame();
+    setShowTouch(isTouchDevice());
     return () => {
       gameRef.current?.destroy(true);
       gameRef.current = null;
+      gameRefStatic.current = null;
     };
   }, [initGame]);
 
@@ -91,11 +120,14 @@ export function App() {
       setHud(data as HudState);
     });
 
-    const unsubStart = GameBridge.on('start-game', () => {
+    const unsubStart = GameBridge.on('start-game', (data) => {
+      const { levelIndex = 0 } = (data as StartGamePayload) ?? {};
       GameState.reset();
+      GameState.currentLevel = levelIndex;
+      VirtualInput.reset();
       const game = gameRef.current;
       if (game) {
-        game.scene.start('GameScene', { levelIndex: 0 });
+        game.scene.start('GameScene', { levelIndex });
         setScreen('playing');
       }
     });
@@ -106,7 +138,17 @@ export function App() {
         game.scene.stop('GameScene');
         GameState.reset();
       }
+      VirtualInput.reset();
       setScreen('menu');
+    });
+
+    const unsubResume = GameBridge.on('resume-game', () => emitToGameScene('resume-game'));
+    const unsubRestart = GameBridge.on('restart-level', () => emitToGameScene('restart-level'));
+    const unsubPause = GameBridge.on('pause-game', () => emitToGameScene('toggle-pause'));
+
+    const unsubSound = GameBridge.on('sound-toggle', (data) => {
+      const { enabled } = data as { enabled: boolean };
+      setSoundEnabled(enabled);
     });
 
     return () => {
@@ -114,6 +156,10 @@ export function App() {
       unsubHud();
       unsubStart();
       unsubMenu();
+      unsubResume();
+      unsubRestart();
+      unsubPause();
+      unsubSound();
     };
   }, []);
 
@@ -133,6 +179,13 @@ export function App() {
   useEffect(() => {
     if (isCrispStage) setTilt({ x: 0, y: 0 });
   }, [isCrispStage]);
+
+  const toggleSound = useCallback(() => {
+    const next = !soundEnabled;
+    setSoundEnabled(next);
+    Storage.setSoundEnabled(next);
+    GameBridge.emit('sound-toggle', { enabled: next });
+  }, [soundEnabled]);
 
   const handleMouseMove = useCallback((e: React.MouseEvent) => {
     if (!stageRef.current || isCrispStage) return;
@@ -234,15 +287,29 @@ export function App() {
             >
               <div id="game-container" ref={containerRef} />
               {screen === 'loading' && <LoadingOverlay />}
-              {screen === 'menu' && <MenuOverlay />}
-              {screen === 'playing' && <HUD hud={hud} />}
+              {screen === 'menu' && (
+                <MenuOverlay
+                  highScore={Storage.getHighScore()}
+                  soundEnabled={soundEnabled}
+                  onToggleSound={toggleSound}
+                />
+              )}
+              {(screen === 'playing' || screen === 'level-clear') && (
+                <HUD hud={hud} onPause={() => GameBridge.emit('pause-game')} />
+              )}
+              {screen === 'paused' && (
+                <>
+                  <HUD hud={hud} onPause={() => GameBridge.emit('pause-game')} />
+                  <PauseOverlay soundEnabled={soundEnabled} onToggleSound={toggleSound} />
+                </>
+              )}
               {screen === 'level-clear' && (
                 <>
-                  <HUD hud={hud} />
                   <LevelClearOverlay />
                 </>
               )}
               {screen === 'game-over' && <GameOverOverlay state={gameOver} />}
+              {showTouch && (screen === 'playing' || screen === 'paused') && <TouchControls />}
             </div>
             {isCrispStage && <div className="stage-ground-lip" style={{ width: scaledW }} />}
           </div>
@@ -253,6 +320,7 @@ export function App() {
 
       <footer className="site-footer">
         EASHAN&apos;S QUEST — Built with Phaser + React
+        {showTouch && <span className="mobile-hint"> · Tap controls enabled</span>}
       </footer>
     </div>
   );

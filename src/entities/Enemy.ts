@@ -11,6 +11,44 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
   private patrolMax: number;
   private flyBaseY: number;
   private flyPhase = 0;
+  private groundLayer: Phaser.Physics.Arcade.StaticGroup | null = null;
+
+  setGroundLayer(layer: Phaser.Physics.Arcade.StaticGroup): void {
+    this.groundLayer = layer;
+  }
+
+  checkLedge(): void {
+    if (
+      !this.groundLayer ||
+      this.enemyType === EnemyType.Flyer ||
+      this.isShell ||
+      !this.isActive
+    ) {
+      return;
+    }
+
+    const body = this.body as Phaser.Physics.Arcade.Body;
+    if (!body.blocked.down && !body.touching.down) return;
+
+    const probeX = this.x + this.direction * 20;
+    const probeY = body.bottom + 18;
+    let hasGround = false;
+
+    for (const child of this.groundLayer.getChildren()) {
+      const tile = child as Phaser.Physics.Arcade.Sprite;
+      if (!tile.active) continue;
+      if (Math.abs(tile.x - probeX) < 18 && Math.abs(tile.y - probeY) < 18) {
+        hasGround = true;
+        break;
+      }
+    }
+
+    if (!hasGround) {
+      this.direction *= -1;
+      body.setVelocityX(this.direction * ENEMY_WALKER_SPEED);
+      this.setFlipX(this.direction > 0);
+    }
+  }
 
   constructor(
     scene: Phaser.Scene,
@@ -84,6 +122,8 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
     if (body.blocked.down && body.velocity.x === 0) {
       body.setVelocityX(this.direction * ENEMY_WALKER_SPEED);
     }
+
+    this.checkLedge();
   }
 
   stomp(): boolean {
@@ -140,6 +180,14 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
 
     if (falling && playerBottom <= enemyTop + 12) {
       return 'stomp';
+    }
+
+    if (this.enemyType === EnemyType.Shell && this.isShell) {
+      const shellBody = this.body as Phaser.Physics.Arcade.Body;
+      if (Math.abs(shellBody.velocity.x) < 40) {
+        this.kick(player.x < this.x ? -1 : 1);
+        return 'none';
+      }
     }
 
     if (player.isStarPowered) {

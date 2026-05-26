@@ -40,6 +40,17 @@ export class Block extends Phaser.Physics.Arcade.Sprite {
     const body = this.body as Phaser.Physics.Arcade.Body;
     body.setImmovable(true);
     body.setAllowGravity(false);
+
+    if (kind === 'question' && !this.isUsed) {
+      scene.tweens.add({
+        targets: this,
+        y: y - 3,
+        duration: 800,
+        yoyo: true,
+        repeat: -1,
+        ease: 'Sine.easeInOut',
+      });
+    }
   }
 
   hitFromBelow(): boolean {

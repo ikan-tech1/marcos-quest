@@ -20,6 +20,13 @@ export function generateTextures(scene: Phaser.Scene): void {
   g.clear();
 
   drawRect(g, 32, 32, 0xc45c26, 0x8b3a12);
+  g.lineStyle(1, 0x8b3a12, 0.6);
+  for (let y = 8; y < 32; y += 8) {
+    g.lineBetween(0, y, 32, y);
+  }
+  for (let x = 16; x < 32; x += 16) {
+    g.lineBetween(x, 0, x, 32);
+  }
   g.generateTexture('tile-brick', 32, 32);
   g.clear();
 
@@ -28,7 +35,15 @@ export function generateTextures(scene: Phaser.Scene): void {
   g.fillRect(10, 8, 12, 12);
   g.fillStyle(0x000000, 1);
   g.fillRect(14, 12, 4, 4);
+  g.fillStyle(0xffd700, 0.4);
+  g.fillRect(2, 2, 8, 8);
   g.generateTexture('tile-question', 32, 32);
+  g.clear();
+
+  drawRect(g, 32, 32, 0xf4a020, 0xc47a00);
+  g.fillStyle(0xffd700, 1);
+  g.fillRect(12, 10, 8, 12);
+  g.generateTexture('tile-question-used', 32, 32);
   g.clear();
 
   drawRect(g, 32, 32, 0x228b22, 0x145214);
@@ -56,12 +71,33 @@ export function generateTextures(scene: Phaser.Scene): void {
   // Player small (24x28)
   g.fillStyle(0xe74c3c, 1);
   g.fillRect(4, 0, 16, 10);
-  g.fillStyle( 0x3498db, 1);
+  g.fillStyle(0x3498db, 1);
   g.fillRect(4, 10, 16, 12);
   g.fillStyle(0x2c3e50, 1);
   g.fillRect(6, 22, 5, 6);
   g.fillRect(13, 22, 5, 6);
   g.generateTexture('player-small', 24, 28);
+  g.clear();
+
+  // Player small run frames
+  g.fillStyle(0xe74c3c, 1);
+  g.fillRect(4, 0, 16, 10);
+  g.fillStyle(0x3498db, 1);
+  g.fillRect(4, 10, 16, 12);
+  g.fillStyle(0x2c3e50, 1);
+  g.fillRect(5, 22, 5, 6);
+  g.fillRect(14, 20, 5, 8);
+  g.generateTexture('player-small-run1', 24, 28);
+  g.clear();
+
+  g.fillStyle(0xe74c3c, 1);
+  g.fillRect(4, 0, 16, 10);
+  g.fillStyle(0x3498db, 1);
+  g.fillRect(4, 10, 16, 12);
+  g.fillStyle(0x2c3e50, 1);
+  g.fillRect(14, 22, 5, 6);
+  g.fillRect(5, 20, 5, 8);
+  g.generateTexture('player-small-run2', 24, 28);
   g.clear();
 
   // Player big (24x48)
@@ -75,6 +111,26 @@ export function generateTextures(scene: Phaser.Scene): void {
   g.generateTexture('player-big', 24, 48);
   g.clear();
 
+  g.fillStyle(0xe74c3c, 1);
+  g.fillRect(4, 0, 16, 10);
+  g.fillStyle(0x3498db, 1);
+  g.fillRect(2, 10, 20, 22);
+  g.fillStyle(0x2c3e50, 1);
+  g.fillRect(3, 32, 6, 8);
+  g.fillRect(15, 30, 6, 10);
+  g.generateTexture('player-big-run1', 24, 48);
+  g.clear();
+
+  g.fillStyle(0xe74c3c, 1);
+  g.fillRect(4, 0, 16, 10);
+  g.fillStyle(0x3498db, 1);
+  g.fillRect(2, 10, 20, 22);
+  g.fillStyle(0x2c3e50, 1);
+  g.fillRect(15, 32, 6, 8);
+  g.fillRect(3, 30, 6, 10);
+  g.generateTexture('player-big-run2', 24, 48);
+  g.clear();
+
   // Player blaze tint overlay
   g.fillStyle(0xff6600, 1);
   g.fillRect(4, 0, 16, 10);
@@ -84,6 +140,26 @@ export function generateTextures(scene: Phaser.Scene): void {
   g.fillRect(4, 32, 6, 8);
   g.fillRect(14, 32, 6, 8);
   g.generateTexture('player-blaze', 24, 48);
+  g.clear();
+
+  g.fillStyle(0xff6600, 1);
+  g.fillRect(4, 0, 16, 10);
+  g.fillStyle(0xff9933, 1);
+  g.fillRect(2, 10, 20, 22);
+  g.fillStyle(0x2c3e50, 1);
+  g.fillRect(3, 32, 6, 8);
+  g.fillRect(15, 30, 6, 10);
+  g.generateTexture('player-blaze-run1', 24, 48);
+  g.clear();
+
+  g.fillStyle(0xff6600, 1);
+  g.fillRect(4, 0, 16, 10);
+  g.fillStyle(0xff9933, 1);
+  g.fillRect(2, 10, 20, 22);
+  g.fillStyle(0x2c3e50, 1);
+  g.fillRect(15, 32, 6, 8);
+  g.fillRect(3, 30, 6, 10);
+  g.generateTexture('player-blaze-run2', 24, 48);
   g.clear();
 
   // Walker enemy (28x24)
@@ -122,12 +198,23 @@ export function generateTextures(scene: Phaser.Scene): void {
   g.generateTexture('enemy-flyer', 28, 20);
   g.clear();
 
-  // Coin (16x16)
-  g.fillStyle(0xffd700, 1);
-  g.fillCircle(8, 8, 7);
+  // Coin (16x16) — shiny gold with highlight
   g.fillStyle(0xffaa00, 1);
-  g.fillCircle(8, 8, 4);
+  g.fillCircle(8, 8, 7);
+  g.fillStyle(0xffd700, 1);
+  g.fillCircle(8, 8, 5);
+  g.fillStyle(0xfff8dc, 1);
+  g.fillCircle(6, 6, 2);
+  g.fillStyle(0xcc8800, 1);
+  g.fillRect(10, 4, 2, 8);
   g.generateTexture('coin', 16, 16);
+  g.clear();
+
+  g.fillStyle(0xffaa00, 1);
+  g.fillEllipse(8, 8, 4, 7);
+  g.fillStyle(0xffd700, 1);
+  g.fillEllipse(8, 8, 2, 5);
+  g.generateTexture('coin-side', 16, 16);
   g.clear();
 
   // Power-ups

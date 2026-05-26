@@ -15,6 +15,10 @@ export function GameOverOverlay({ state }: Props) {
         <p style={{ fontSize: '1.1rem', marginBottom: 8 }}>
           Final Score: <strong style={{ color: 'var(--accent-gold)' }}>{state.score}</strong>
         </p>
+        <p style={{ fontSize: '0.95rem', marginBottom: 8 }}>
+          High Score: <strong>{state.highScore}</strong>
+          {state.isNewRecord && <span className="new-record"> NEW RECORD!</span>}
+        </p>
         {state.won && (
           <p className="subtitle" style={{ marginBottom: 20 }}>
             All worlds conquered!

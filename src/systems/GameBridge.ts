@@ -1,4 +1,4 @@
-export type GameScreen = 'loading' | 'menu' | 'playing' | 'level-clear' | 'game-over';
+export type GameScreen = 'loading' | 'menu' | 'playing' | 'paused' | 'level-clear' | 'game-over';
 
 export interface HudState {
   score: number;
@@ -7,11 +7,20 @@ export interface HudState {
   world: string;
   combo: number;
   comboMultiplier: number;
+  levelIndex: number;
+  totalLevels: number;
+  highScore: number;
 }
 
 export interface GameOverState {
   won: boolean;
   score: number;
+  highScore: number;
+  isNewRecord: boolean;
+}
+
+export interface StartGamePayload {
+  levelIndex?: number;
 }
 
 type Listener = (...args: unknown[]) => void;

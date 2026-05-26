@@ -1,4 +1,5 @@
 import { STARTING_LIVES } from '../config/constants';
+import { Storage } from './Storage';
 
 class GameStateManager {
   score = 0;
@@ -61,9 +62,19 @@ class GameStateManager {
   }
 
   nextLevel(): void {
+    Storage.markLevelCompleted(this.currentLevel);
     this.currentLevel += 1;
     this.combo = 0;
     this.comboTimer = 0;
+  }
+
+  recordHighScore(): { highScore: number; isNewRecord: boolean } {
+    const isNewRecord = Storage.setHighScore(this.score);
+    return { highScore: Math.max(this.score, Storage.getHighScore()), isNewRecord };
+  }
+
+  get highScore(): number {
+    return Storage.getHighScore();
   }
 }
 

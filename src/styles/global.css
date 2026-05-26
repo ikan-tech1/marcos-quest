@@ -1063,6 +1063,18 @@ body {
   animation: pulse-glow 1s ease-in-out infinite;
 }
 
+.level-clear-overlay {
+  justify-content: center;
+  pointer-events: none;
+}
+
+.level-clear-sub {
+  margin-top: 12px;
+  font-size: 0.75rem;
+  color: rgba(255, 255, 255, 0.85);
+  text-shadow: 1px 1px 0 rgba(0, 0, 0, 0.5);
+}
+
 @keyframes pulse-glow {
   0%, 100% { opacity: 1; transform: scale(1); }
   50% { opacity: 0.85; transform: scale(1.05); }
@@ -1121,4 +1133,267 @@ body {
 
 .app-shell--playing .site-footer {
   opacity: 0.65;
+}
+
+.mobile-hint {
+  opacity: 0.75;
+}
+
+/* ─── Menu extras ─── */
+
+.menu-high-score {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 0.45rem;
+  color: var(--qblock-dark);
+  margin: 10px 0 4px;
+}
+
+.menu-options {
+  margin-top: 12px;
+}
+
+.btn-ghost {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 0.4rem;
+  padding: 8px 14px;
+  border: 2px solid var(--portal-frame);
+  background: rgba(255, 255, 255, 0.7);
+  color: var(--text);
+  cursor: pointer;
+  border-radius: 4px;
+}
+
+.btn-ghost:hover {
+  background: #fff;
+}
+
+.level-select {
+  margin-top: 16px;
+}
+
+.level-select-label {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 0.4rem;
+  color: var(--text-muted);
+  margin-bottom: 8px;
+}
+
+.level-select-grid {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+}
+
+.level-btn {
+  width: 36px;
+  height: 36px;
+  font-family: 'Press Start 2P', monospace;
+  font-size: 0.55rem;
+  border: 3px solid var(--portal-frame);
+  background: var(--coin-gold);
+  color: #5d4037;
+  cursor: pointer;
+  box-shadow: 0 3px 0 var(--portal-frame);
+}
+
+.level-btn--cleared {
+  background: #81c784;
+  color: #1b5e20;
+}
+
+.level-btn--locked {
+  background: #bdbdbd;
+  color: #757575;
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+.level-btn:not(:disabled):active {
+  transform: translateY(2px);
+  box-shadow: 0 1px 0 var(--portal-frame);
+}
+
+/* ─── HUD extras ─── */
+
+.hud-stat-right {
+  text-align: right;
+}
+
+.hud-progress {
+  display: flex;
+  gap: 4px;
+  justify-content: center;
+  margin-top: 6px;
+}
+
+.hud-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.35);
+  border: 1px solid rgba(0, 0, 0, 0.3);
+}
+
+.hud-dot--active {
+  background: var(--accent-gold);
+  box-shadow: 0 0 6px rgba(255, 215, 0, 0.8);
+}
+
+.hud-dot--done {
+  background: #81c784;
+}
+
+.hud-high-score {
+  font-size: 0.45rem;
+  margin-top: 4px;
+  opacity: 0.85;
+}
+
+.hud-pause-btn {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  pointer-events: auto;
+  width: 32px;
+  height: 32px;
+  border: 2px solid rgba(255, 255, 255, 0.8);
+  background: rgba(0, 0, 0, 0.45);
+  color: #fff;
+  font-size: 14px;
+  cursor: pointer;
+  border-radius: 4px;
+  z-index: 25;
+}
+
+.hud-pause-btn:hover {
+  background: rgba(0, 0, 0, 0.65);
+}
+
+/* ─── Pause overlay ─── */
+
+.overlay-pause {
+  background: rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(4px);
+}
+
+.pause-panel {
+  text-align: center;
+  min-width: 260px;
+}
+
+.pause-title {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 0.9rem;
+  color: var(--accent-red);
+  margin-bottom: 20px;
+}
+
+.pause-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.btn-secondary {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 0.45rem;
+  padding: 12px 20px;
+  border: 3px solid var(--portal-frame);
+  background: #fff;
+  color: var(--text);
+  cursor: pointer;
+  box-shadow: 0 4px 0 var(--portal-frame);
+}
+
+.btn-secondary:hover {
+  background: #f5f5f5;
+}
+
+.btn-secondary:active {
+  transform: translateY(2px);
+  box-shadow: 0 2px 0 var(--portal-frame);
+}
+
+.pause-hint {
+  margin-top: 16px;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.new-record {
+  color: var(--accent-gold);
+  font-family: 'Press Start 2P', monospace;
+  font-size: 0.55rem;
+  margin-left: 6px;
+}
+
+/* ─── Touch controls ─── */
+
+.touch-controls {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 22;
+}
+
+.touch-dpad,
+.touch-actions {
+  position: absolute;
+  pointer-events: auto;
+  display: flex;
+  gap: 8px;
+}
+
+.touch-dpad {
+  left: 8px;
+  bottom: 8px;
+}
+
+.touch-actions {
+  right: 8px;
+  bottom: 8px;
+  flex-direction: column;
+  align-items: flex-end;
+}
+
+.touch-btn {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 0.35rem;
+  border: 2px solid rgba(255, 255, 255, 0.7);
+  background: rgba(0, 0, 0, 0.45);
+  color: #fff;
+  border-radius: 8px;
+  cursor: pointer;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.touch-btn-left,
+.touch-btn-right {
+  width: 48px;
+  height: 48px;
+  font-size: 0.7rem;
+}
+
+.touch-btn-jump {
+  width: 64px;
+  height: 64px;
+  font-size: 0.4rem;
+  background: rgba(229, 57, 53, 0.55);
+}
+
+.touch-btn-dash {
+  width: 56px;
+  height: 40px;
+}
+
+.touch-btn-fire {
+  width: 48px;
+  height: 36px;
+  font-size: 0.3rem;
+}
+
+.touch-btn:active {
+  background: rgba(255, 255, 255, 0.25);
 }

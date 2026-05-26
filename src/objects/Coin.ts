@@ -24,6 +24,15 @@ export class Coin extends Phaser.Physics.Arcade.Sprite {
       repeat: -1,
       ease: 'Sine.easeInOut',
     });
+
+    scene.tweens.add({
+      targets: this,
+      scaleX: { from: 1, to: 0.35 },
+      duration: 350,
+      yoyo: true,
+      repeat: -1,
+      ease: 'Sine.easeInOut',
+    });
   }
 
   collect(audio: AudioManager): void {

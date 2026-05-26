@@ -40,6 +40,8 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
   private jumpsRemaining = 2;
   private maxJumps = 2;
   private dashTrailTimer = 0;
+  private runAnimTimer = 0;
+  private runFrame = 0;
 
   playerState: PlayerState = PlayerState.Small;
   fireEnabled = false;
@@ -181,7 +183,17 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     }
 
     this.wasOnFloor = onFloor;
-    this.updateSprite();
+    if (onFloor && Math.abs(body.velocity.x) > 40) {
+      this.runAnimTimer += delta;
+      if (this.runAnimTimer > 120) {
+        this.runAnimTimer = 0;
+        this.runFrame = this.runFrame === 0 ? 1 : 0;
+      }
+    } else {
+      this.runAnimTimer = 0;
+      this.runFrame = 0;
+    }
+    this.updateSprite(onFloor && Math.abs(body.velocity.x) > 40);
   }
 
   private doJump(isDouble: boolean): void {
@@ -232,14 +244,15 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     });
   }
 
-  private updateSprite(): void {
+  private updateSprite(isRunning = false): void {
     this.setFlipX(this.facing < 0);
+    const runSuffix = isRunning ? `-run${this.runFrame + 1}` : '';
     if (this.playerState === PlayerState.Small) {
-      this.setTexture('player-small');
+      this.setTexture(isRunning ? `player-small${runSuffix}` : 'player-small');
     } else if (this.playerState === PlayerState.Blaze) {
-      this.setTexture('player-blaze');
+      this.setTexture(isRunning ? `player-blaze${runSuffix}` : 'player-blaze');
     } else {
-      this.setTexture('player-big');
+      this.setTexture(isRunning ? `player-big${runSuffix}` : 'player-big');
     }
   }
 
