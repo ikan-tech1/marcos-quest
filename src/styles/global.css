@@ -403,6 +403,22 @@ body {
   transition: transform 0.15s ease-out;
 }
 
+/* Flatten during gameplay — 3D tilt blurs the Phaser canvas in most browsers */
+.game-stage--crisp {
+  transform: none !important;
+  transform-style: flat;
+  transition: none;
+}
+
+.game-stage--crisp .portal-frame,
+.game-stage--crisp .game-cabinet {
+  transform-style: flat;
+}
+
+.game-stage--crisp .game-cabinet::before {
+  display: none;
+}
+
 .portal-frame {
   position: relative;
   transform-style: preserve-3d;
@@ -481,15 +497,22 @@ body {
   overflow: hidden;
   background: #000;
   box-shadow: inset 0 0 40px rgba(0, 0, 0, 0.9);
+  isolation: isolate;
 }
 
 #game-container {
   display: block;
   line-height: 0;
+  width: 800px;
+  height: 480px;
 }
 
 #game-container canvas {
   display: block;
+  width: 800px !important;
+  height: 480px !important;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
 }
 
 /* ─── Overlays ─── */
@@ -519,6 +542,8 @@ body {
   justify-content: flex-start;
   padding: 16px;
   background: transparent;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
 }
 
 .overlay-loading {
@@ -829,14 +854,13 @@ body {
 }
 
 .hud-stat {
-  background: rgba(0, 0, 0, 0.55);
+  background: rgba(0, 0, 0, 0.72);
   border: 2px solid rgba(255, 255, 255, 0.15);
   border-radius: 4px;
   padding: 8px 14px;
   font-family: 'Press Start 2P', monospace;
   font-size: 0.55rem;
   line-height: 1.8;
-  backdrop-filter: blur(8px);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
 }
 
