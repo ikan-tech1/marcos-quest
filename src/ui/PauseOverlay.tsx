@@ -3,10 +3,17 @@ import { UISounds } from '../utils/uiSounds';
 
 interface Props {
   soundEnabled: boolean;
+  isFullscreen?: boolean;
   onToggleSound: () => void;
+  onToggleFullscreen?: () => void;
 }
 
-export function PauseOverlay({ soundEnabled, onToggleSound }: Props) {
+export function PauseOverlay({
+  soundEnabled,
+  isFullscreen = false,
+  onToggleSound,
+  onToggleFullscreen,
+}: Props) {
   const resume = () => {
     UISounds.confirm();
     GameBridge.emit('resume-game');
@@ -46,11 +53,16 @@ export function PauseOverlay({ soundEnabled, onToggleSound }: Props) {
             <button type="button" className="btn-wood" onClick={toggleSound}>
               {soundEnabled ? '🔊 Sound ON' : '🔇 Sound OFF'}
             </button>
+            {onToggleFullscreen && (
+              <button type="button" className="btn-wood" onClick={onToggleFullscreen}>
+                {isFullscreen ? '⛶ Exit Fullscreen' : '⛶ Enter Fullscreen (F)'}
+              </button>
+            )}
             <button type="button" className="btn-wood btn-wood--danger" onClick={quit}>
               ✕ QUIT TO MENU
             </button>
           </div>
-          <p className="pause-hint">ESC / P to resume</p>
+          <p className="pause-hint">ESC / P to resume · F toggles fullscreen</p>
         </div>
       </div>
     </div>

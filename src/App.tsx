@@ -18,6 +18,7 @@ import { LevelClearOverlay } from './ui/LevelClearOverlay';
 import { PauseOverlay } from './ui/PauseOverlay';
 import { TouchControls } from './ui/TouchControls';
 import { UISounds } from './utils/uiSounds';
+import { useFullscreen } from './hooks/useFullscreen';
 
 const defaultHud: HudState = {
   score: 0,
@@ -33,8 +34,8 @@ const defaultHud: HudState = {
 };
 
 /** Max integer Phaser zoom — fills viewport, crisp pixels only. */
-function computeGameScale(): number {
-  const pad = 12;
+function computeGameScale(isFullscreen: boolean): number {
+  const pad = isFullscreen ? 0 : 12;
   const maxW = window.innerWidth - pad * 2;
   const maxH = window.innerHeight - pad * 2;
   return Math.max(
@@ -63,6 +64,8 @@ const FULLSCREEN_UI_SCREENS: GameScreen[] = ['loading', 'menu'];
 export function App() {
   const gameRef = useRef<Phaser.Game | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const shellRef = useRef<HTMLDivElement>(null);
+  const { isFullscreen, toggle: toggleFullscreen, exit: exitFullscreen } = useFullscreen(shellRef);
   const [screen, setScreen] = useState<GameScreen>('loading');
   const [hud, setHud] = useState<HudState>(defaultHud);
   const [gameOver, setGameOver] = useState<GameOverState>({
@@ -184,12 +187,30 @@ export function App() {
   useEffect(() => {
     const updateScale = () => {
       setViewport({ w: window.innerWidth, h: window.innerHeight });
-      setGameScale(computeGameScale());
+      setGameScale(computeGameScale(isFullscreen));
     };
     updateScale();
     window.addEventListener('resize', updateScale);
     return () => window.removeEventListener('resize', updateScale);
-  }, []);
+  }, [isFullscreen]);
+
+  useEffect(() => {
+    if (!showGameViewport && isFullscreen) {
+      void exitFullscreen();
+    }
+  }, [showGameViewport, isFullscreen, exitFullscreen]);
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (!showGameViewport) return;
+      if (e.key === 'f' || e.key === 'F') {
+        e.preventDefault();
+        void toggleFullscreen();
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [showGameViewport, toggleFullscreen]);
 
   useEffect(() => {
     const game = gameRef.current;
@@ -211,9 +232,15 @@ export function App() {
   const letterboxX = Math.max(0, (viewport.w - scaledW) / 2);
   const letterboxY = Math.max(0, (viewport.h - scaledH) / 2);
 
+  const handleToggleFullscreen = useCallback(() => {
+    UISounds.click();
+    void toggleFullscreen();
+  }, [toggleFullscreen]);
+
   return (
     <div
-      className={`app-shell app-shell--${screen}${showGameViewport ? ' app-shell--gameplay' : ' app-shell--hero'}`}
+      ref={shellRef}
+      className={`app-shell app-shell--${screen}${showGameViewport ? ' app-shell--gameplay' : ' app-shell--hero'}${isFullscreen ? ' app-shell--fullscreen' : ''}`}
       data-transition={screenVisible ? 'in' : 'out'}
     >
       <div className="world-sky" aria-hidden="true" />
@@ -246,20 +273,32 @@ export function App() {
         <div className="bush bush-3" />
       </div>
 
-      {!showGameViewport && (
-        <div className="world-floaters" aria-hidden="true">
-          <div className="floater floater-coin floater-1" />
-          <div className="floater floater-coin floater-2" />
-          <div className="floater floater-coin floater-3" />
-          <div className="floater floater-coin floater-7" />
-          <div className="floater floater-qblock floater-4" />
-          <div className="floater floater-qblock floater-8" />
-          <div className="floater floater-brick floater-5" />
-          <div className="floater floater-brick floater-6" />
-          <div className="floater floater-pipe floater-pipe-left" />
-          <div className="floater floater-pipe floater-pipe-right" />
-        </div>
-      )}
+      <div className={`world-floaters${showGameViewport ? ' world-floaters--gameplay' : ''}`} aria-hidden="true">
+        <div className="floater floater-coin floater-1" />
+        <div className="floater floater-coin floater-2" />
+        <div className="floater floater-coin floater-3" />
+        <div className="floater floater-coin floater-7" />
+        <div className="floater floater-qblock floater-4" />
+        <div className="floater floater-qblock floater-8" />
+        <div className="floater floater-brick floater-5" />
+        <div className="floater floater-brick floater-6" />
+        <div className="floater floater-pipe floater-pipe-left" />
+        <div className="floater floater-pipe floater-pipe-right" />
+        {showGameViewport && (
+          <>
+            <div className="floater floater-coin floater-g1" />
+            <div className="floater floater-coin floater-g2" />
+            <div className="floater floater-coin floater-g3" />
+            <div className="floater floater-qblock floater-g4" />
+            <div className="floater floater-brick floater-g5" />
+            <div className="floater floater-brick floater-g6" />
+            <div className="floater floater-pipe floater-g-pipe-l" />
+            <div className="floater floater-pipe floater-g-pipe-r" />
+            <div className="cloud cloud-static cloud-g1" />
+            <div className="cloud cloud-static cloud-g2" />
+          </>
+        )}
+      </div>
 
       <div className="world-ground" aria-hidden="true">
         <div className="ground-grass" />
@@ -286,7 +325,7 @@ export function App() {
 
       {showGameViewport && (
         <div
-          className="game-viewport"
+          className={`game-viewport${isFullscreen ? ' game-viewport--fullscreen' : ''}`}
           style={{
             width: scaledW,
             height: scaledH,
@@ -294,36 +333,35 @@ export function App() {
             top: letterboxY,
           }}
         >
-          <div className="game-viewport-frame" aria-hidden="true">
-            <div className="frame-corner frame-corner--tl" />
-            <div className="frame-corner frame-corner--tr" />
-            <div className="frame-corner frame-corner--bl" />
-            <div className="frame-corner frame-corner--br" />
-            <div className="frame-grass-lip" />
-          </div>
+          {!isFullscreen && (
+            <div className="game-viewport-frame" aria-hidden="true">
+              <div className="frame-corner frame-corner--tl" />
+              <div className="frame-corner frame-corner--tr" />
+              <div className="frame-corner frame-corner--bl" />
+              <div className="frame-corner frame-corner--br" />
+              <div className="frame-grass-lip" />
+            </div>
+          )}
 
           {(screen === 'playing' || screen === 'level-clear' || screen === 'paused') && (
-            <HUD hud={hud} onPause={() => GameBridge.emit('pause-game')} />
+            <HUD
+              hud={hud}
+              isFullscreen={isFullscreen}
+              onPause={() => GameBridge.emit('pause-game')}
+              onToggleFullscreen={handleToggleFullscreen}
+            />
           )}
           {screen === 'paused' && (
-            <PauseOverlay soundEnabled={soundEnabled} onToggleSound={toggleSound} />
+            <PauseOverlay
+              soundEnabled={soundEnabled}
+              isFullscreen={isFullscreen}
+              onToggleSound={toggleSound}
+              onToggleFullscreen={handleToggleFullscreen}
+            />
           )}
           {screen === 'level-clear' && <LevelClearOverlay />}
           {showTouch && (screen === 'playing' || screen === 'paused') && <TouchControls />}
         </div>
-      )}
-
-      {showGameViewport && (letterboxX > 0 || letterboxY > 0) && (
-        <>
-          {letterboxY > 0 && <div className="letterbox letterbox--top" style={{ height: letterboxY }} />}
-          {letterboxY > 0 && (
-            <div className="letterbox letterbox--bottom" style={{ height: letterboxY, bottom: 0 }} />
-          )}
-          {letterboxX > 0 && <div className="letterbox letterbox--left" style={{ width: letterboxX }} />}
-          {letterboxX > 0 && (
-            <div className="letterbox letterbox--right" style={{ width: letterboxX, right: 0 }} />
-          )}
-        </>
       )}
 
       <div className={`screen-layer${isFullScreenUI ? ' screen-layer--fullscreen' : ''}`}>

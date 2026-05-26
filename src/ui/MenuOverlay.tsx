@@ -136,6 +136,7 @@ export function MenuOverlay({ highScore, soundEnabled, onToggleSound }: Props) {
               <div><kbd>Shift</kbd> / <kbd>K</kbd> Dash</div>
               <div><kbd>Z</kbd> / <kbd>J</kbd> Fire</div>
               <div><kbd>Esc</kbd> / <kbd>P</kbd> Pause</div>
+              <div><kbd>F</kbd> Fullscreen</div>
             </div>
           </div>
         </div>
