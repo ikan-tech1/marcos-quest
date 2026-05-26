@@ -1,7 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
 import type { GameScreen, HudState } from '../systems/GameBridge';
 import type { CabinetLayout } from '../config/cabinetLayout';
+import { Storage } from '../systems/Storage';
 import { UISounds } from '../utils/uiSounds';
+import { CharacterSelectCabinet } from './CharacterSelect';
 
 interface Props {
   layout: CabinetLayout;
@@ -10,6 +12,7 @@ interface Props {
   isPlaying: boolean;
   onPause: () => void;
   onToggleFullscreen: () => void;
+  onCharacterChange?: (characterId: string) => void;
 }
 
 export function ArcadeCabinet({
@@ -19,9 +22,11 @@ export function ArcadeCabinet({
   isPlaying,
   onPause,
   onToggleFullscreen,
+  onCharacterChange,
 }: Props) {
   const prevCoins = useRef(hud.coins);
   const [coinPulse, setCoinPulse] = useState(false);
+  const [characterId, setCharacterId] = useState(Storage.getSelectedCharacter());
 
   useEffect(() => {
     if (hud.coins > prevCoins.current) {
@@ -33,8 +38,14 @@ export function ArcadeCabinet({
     prevCoins.current = hud.coins;
   }, [hud.coins]);
 
-  const showAttract = screen === 'paused' || !isPlaying;
+  const showAttract = screen === 'paused';
   const maxLives = 3;
+  const displayName = hud.characterName || 'Hero';
+
+  const handleCharacterChange = (id: string) => {
+    setCharacterId(id);
+    onCharacterChange?.(id);
+  };
 
   return (
     <div
@@ -55,7 +66,10 @@ export function ArcadeCabinet({
           <span className="cabinet-neon-line cabinet-neon-line--top">EASHAN&apos;S</span>
           <span className="cabinet-neon-line cabinet-neon-line--bottom">QUEST</span>
         </div>
-        <div className="cabinet-marquee-world">{hud.world || 'WORLD 1-1'}</div>
+        <div className="cabinet-marquee-world">
+          {hud.world || 'WORLD 1-1'}
+          <span className="cabinet-marquee-hero">{displayName}</span>
+        </div>
         <div className="cabinet-marquee-actions">
           <button
             type="button"
@@ -98,10 +112,7 @@ export function ArcadeCabinet({
           <div className="cabinet-bezel">
             <div
               className="cabinet-crt cabinet-crt--hole"
-              style={{
-                width: layout.scaledW,
-                height: layout.scaledH,
-              }}
+              style={{ width: layout.scaledW, height: layout.scaledH }}
             >
               <div className="cabinet-crt-vignette" aria-hidden="true" />
             </div>
@@ -175,8 +186,8 @@ export function ArcadeCabinet({
 
           {showAttract && (
             <div className="cabinet-attract">
-              <span className="cabinet-attract-line blink">INSERT COIN</span>
-              <span className="cabinet-attract-line blink cabinet-attract-line--delay">PRESS START</span>
+              <CharacterSelectCabinet selectedId={characterId} onSelect={handleCharacterChange} />
+              <span className="cabinet-attract-line blink">RESUME TO PLAY</span>
             </div>
           )}
         </div>

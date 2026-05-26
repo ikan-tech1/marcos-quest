@@ -4,6 +4,8 @@ import { Storage } from '../systems/Storage';
 import { EasterEggs } from '../systems/EasterEggs';
 import { LEVELS } from '../levels/levelData';
 import { UISounds } from '../utils/uiSounds';
+import { CharacterSelect } from './CharacterSelect';
+import { getCharacterById } from '../config/characters';
 
 interface Props {
   highScore: number;
@@ -13,7 +15,9 @@ interface Props {
 
 export function MenuOverlay({ highScore, soundEnabled, onToggleSound }: Props) {
   const [konamiMsg, setKonamiMsg] = useState('');
+  const [characterId, setCharacterId] = useState(Storage.getSelectedCharacter());
   const secretUnlocked = EasterEggs.isSecretLevelUnlocked();
+  const hero = getCharacterById(characterId);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -28,7 +32,7 @@ export function MenuOverlay({ highScore, soundEnabled, onToggleSound }: Props) {
 
   const start = (levelIndex = 0) => {
     UISounds.confirm();
-    GameBridge.emit('start-game', { levelIndex });
+    GameBridge.emit('start-game', { levelIndex, characterId });
   };
 
   const completedLevels = Storage.getCompletedLevels();
@@ -41,7 +45,9 @@ export function MenuOverlay({ highScore, soundEnabled, onToggleSound }: Props) {
 
       <div className="menu-hero">
         <div className="menu-title-block">
-          <p className="menu-hero-tag screen-enter screen-enter--1">★ Welcome, Eashan! ★</p>
+          <p className="menu-hero-tag screen-enter screen-enter--1">
+            ★ Playing as {hero.name} ★
+          </p>
           <h1 className="title-hero screen-enter screen-enter--2">
             <span className="title-line title-line--top">EASHAN&apos;S</span>
             <span className="title-line title-line--bottom">QUEST</span>
@@ -69,6 +75,8 @@ export function MenuOverlay({ highScore, soundEnabled, onToggleSound }: Props) {
               <span className="pill pill-gold">Combos</span>
               <span className="pill pill-blue">Power-Ups</span>
             </div>
+
+            <CharacterSelect selectedId={characterId} onSelect={setCharacterId} />
 
             <button type="button" className="btn-start-coin" onClick={() => start(0)}>
               <span className="btn-start-coin-inner">

@@ -1557,6 +1557,145 @@ body {
   box-shadow: 0 2px 0 #2a1810;
 }
 
+/* ─── Character Select (menu) ─── */
+
+.character-select {
+  margin: 14px 0 10px;
+}
+
+.character-select-label {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 0.38rem;
+  color: rgba(255, 248, 231, 0.75);
+  margin-bottom: 10px;
+}
+
+.character-select-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+}
+
+.character-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 4px;
+  border: 3px solid #2a1810;
+  background: rgba(255, 255, 255, 0.08);
+  cursor: pointer;
+  border-radius: 6px;
+  transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+}
+
+.character-card:hover {
+  transform: translateY(-2px);
+  border-color: var(--accent-gold);
+}
+
+.character-card--active {
+  border-color: var(--accent-gold);
+  background: rgba(255, 215, 0, 0.12);
+  box-shadow: 0 0 16px rgba(255, 215, 0, 0.35);
+  animation: char-bounce 1.2s ease-in-out infinite;
+}
+
+@keyframes char-bounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-4px); }
+}
+
+.character-card-name {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 0.32rem;
+  color: #fff8e7;
+}
+
+.char-preview {
+  width: 40px;
+  height: 44px;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  image-rendering: pixelated;
+}
+
+.char-preview-sprite {
+  width: 24px;
+  height: 28px;
+  image-rendering: pixelated;
+  box-shadow: 0 2px 0 rgba(0, 0, 0, 0.3);
+}
+
+.char-preview--eashan .char-preview-sprite {
+  background:
+    linear-gradient(#e74c3c 0 0) 4px 0 / 16px 10px no-repeat,
+    linear-gradient(#3498db 0 0) 4px 10px / 16px 12px no-repeat,
+    linear-gradient(#2c3e50 0 0) 6px 22px / 5px 6px no-repeat,
+    linear-gradient(#2c3e50 0 0) 13px 22px / 5px 6px no-repeat;
+}
+
+.char-preview--luna .char-preview-sprite {
+  background:
+    linear-gradient(#9b59b6 0 0) 3px 0 / 18px 7px no-repeat,
+    linear-gradient(#e056fd 0 0) 4px 4px / 16px 2px no-repeat,
+    linear-gradient(#6c3483 0 0) 5px 9px / 14px 11px no-repeat,
+    linear-gradient(#5f27cd 0 0) 6px 22px / 4px 5px no-repeat,
+    linear-gradient(#5f27cd 0 0) 14px 22px / 4px 5px no-repeat;
+}
+
+.char-preview--rex .char-preview-sprite {
+  background:
+    linear-gradient(#27ae60 0 0) 2px 0 / 20px 9px no-repeat,
+    linear-gradient(#145a32 0 0) 5px 4px / 14px 3px no-repeat,
+    linear-gradient(#2ecc71 0 0) 2px 9px / 20px 11px no-repeat,
+    linear-gradient(#1a5276 0 0) 4px 21px / 7px 7px no-repeat,
+    linear-gradient(#1a5276 0 0) 13px 21px / 7px 7px no-repeat;
+}
+
+.char-preview--zap .char-preview-sprite {
+  background:
+    linear-gradient(#f1c40f 0 0) 5px 2px / 14px 5px no-repeat,
+    linear-gradient(#f39c12 0 0) 6px 10px / 12px 10px no-repeat,
+    linear-gradient(#fff176 0 0) 11px 11px / 2px 3px no-repeat,
+    linear-gradient(#e67e22 0 0) 7px 22px / 4px 5px no-repeat,
+    linear-gradient(#e67e22 0 0) 13px 22px / 4px 5px no-repeat;
+}
+
+.character-detail {
+  margin-top: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  align-items: center;
+}
+
+.character-detail-name {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 0.5rem;
+  text-shadow: 0 0 10px currentColor;
+}
+
+.character-detail-tag {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 0.32rem;
+  color: rgba(255, 248, 231, 0.65);
+}
+
+.character-detail-trait {
+  font-size: 0.75rem;
+  color: rgba(255, 248, 231, 0.85);
+}
+
+.hud-character {
+  display: block;
+  margin-top: 4px;
+  font-size: 0.28rem;
+  color: var(--accent-cyan);
+  letter-spacing: 0.04em;
+}
+
 .controls-sign {
   width: min(420px, 88vw);
 }

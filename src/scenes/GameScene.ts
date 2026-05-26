@@ -170,6 +170,12 @@ export class GameScene extends Phaser.Scene {
     this.events.on('toggle-pause', () => this.togglePause());
     this.events.on('resume-game', () => this.resumeGame());
     this.events.on('restart-level', () => this.restartLevel());
+    this.events.on('change-character', () => {
+      this.characterId = Storage.getSelectedCharacter();
+      if (this.paused) {
+        this.restartLevel();
+      }
+    });
     this.physics.world.gravity.y = GRAVITY;
     this.syncHud();
   }

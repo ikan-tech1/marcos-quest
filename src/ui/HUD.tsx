@@ -24,6 +24,9 @@ export function HUD({
         <div className="hud-plank hud-plank--left">
           <span className="hud-label">SCORE</span>
           <span className="hud-value">{hud.score.toString().padStart(6, '0')}</span>
+          {hud.characterName && (
+            <span className="hud-character">{hud.characterName}</span>
+          )}
         </div>
 
         <div className="hud-plank hud-plank--center">

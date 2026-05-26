@@ -21,13 +21,14 @@ import { ArcadeCabinet } from './ui/ArcadeCabinet';
 import { UISounds } from './utils/uiSounds';
 import { useFullscreen } from './hooks/useFullscreen';
 import { computeCabinetLayout, computeGameScale } from './config/cabinetLayout';
+import { getCharacterById } from './config/characters';
 
 const defaultHud: HudState = {
   score: 0,
   coins: 0,
   lives: 3,
   world: '',
-  characterName: 'EASHAN',
+  characterName: getCharacterById(Storage.getSelectedCharacter()).name.toUpperCase(),
   combo: 0,
   comboMultiplier: 1,
   levelIndex: 0,
@@ -122,13 +123,15 @@ export function App() {
     });
 
     const unsubStart = GameBridge.on('start-game', (data) => {
-      const { levelIndex = 0 } = (data as StartGamePayload) ?? {};
+      const { levelIndex = 0, characterId = Storage.getSelectedCharacter() } =
+        (data as StartGamePayload) ?? {};
+      Storage.setSelectedCharacter(characterId);
       GameState.reset();
       GameState.currentLevel = levelIndex;
       VirtualInput.reset();
       const game = gameRef.current;
       if (game) {
-        game.scene.start('GameScene', { levelIndex });
+        game.scene.start('GameScene', { levelIndex, characterId });
         setScreenVisible(false);
         window.setTimeout(() => {
           setScreen('playing');
@@ -320,6 +323,10 @@ export function App() {
           isPlaying={screen === 'playing' || screen === 'level-clear'}
           onPause={() => GameBridge.emit('pause-game')}
           onToggleFullscreen={handleToggleFullscreen}
+          onCharacterChange={(id) => {
+            Storage.setSelectedCharacter(id);
+            emitToGameScene('change-character');
+          }}
         />
       )}
 
