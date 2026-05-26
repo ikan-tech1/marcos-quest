@@ -54,8 +54,16 @@ export class Block extends Phaser.Physics.Arcade.Sprite {
     if (kind === 'question' && !this.isUsed) {
       scene.tweens.add({
         targets: this,
-        y: y - 3,
-        duration: 800,
+        y: y - 2,
+        duration: 600,
+        yoyo: true,
+        repeat: -1,
+        ease: 'Sine.easeInOut',
+      });
+      scene.tweens.add({
+        targets: this,
+        angle: { from: -2, to: 2 },
+        duration: 900,
         yoyo: true,
         repeat: -1,
         ease: 'Sine.easeInOut',
@@ -78,8 +86,10 @@ export class Block extends Phaser.Physics.Arcade.Sprite {
       if (this.coinBlockRemaining <= 0 || this.coinBlockCooldown > 0) return false;
       this.scene.tweens.add({
         targets: this,
-        y: this.y - 8,
-        duration: 80,
+        y: this.y - 10,
+        scaleX: 1.05,
+        scaleY: 0.92,
+        duration: 60,
         yoyo: true,
       });
       this.coinBlockRemaining -= 1;

@@ -19,7 +19,13 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
   private groundLayer: Phaser.Physics.Arcade.StaticGroup | null = null;
   private piranhaTimer = 0;
   private piranhaHidden = false;
+  private piranhaTelegraph = false;
   private bossHp = 3;
+  private walkAnimTimer = 0;
+  private walkFrame = 0;
+  private wingFlapTimer = 0;
+  private wingUp = true;
+  private shellSpinAngle = 0;
 
   setGroundLayer(layer: Phaser.Physics.Arcade.StaticGroup): void {
     this.groundLayer = layer;
@@ -118,12 +124,21 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
       this.piranhaTimer += delta;
       if (playerX !== undefined && Math.abs(playerX - this.x) < 48) {
         this.piranhaHidden = true;
-      } else if (this.piranhaTimer > 2500) {
-        this.piranhaHidden = !this.piranhaHidden;
-        this.piranhaTimer = 0;
+        this.piranhaTelegraph = false;
+      } else if (this.piranhaTimer > 2000) {
+        if (!this.piranhaHidden && !this.piranhaTelegraph) {
+          this.piranhaTelegraph = true;
+          this.piranhaTimer = 0;
+          this.setTint(0xffff88);
+        } else if (this.piranhaTelegraph && this.piranhaTimer > 600) {
+          this.piranhaHidden = !this.piranhaHidden;
+          this.piranhaTelegraph = false;
+          this.clearTint();
+          this.piranhaTimer = 0;
+        }
       }
-      const targetY = this.piranhaHidden ? this.flyBaseY + 24 : this.flyBaseY - 8;
-      this.y = Phaser.Math.Linear(this.y, targetY, 0.08);
+      const targetY = this.piranhaHidden ? this.flyBaseY + 24 : this.piranhaTelegraph ? this.flyBaseY + 8 : this.flyBaseY - 8;
+      this.y = Phaser.Math.Linear(this.y, targetY, this.piranhaTelegraph ? 0.04 : 0.08);
       return;
     }
 
@@ -137,6 +152,11 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
         body.setVelocityX(-ENEMY_WALKER_SPEED * 0.8);
         this.setFlipX(false);
       }
+      this.walkAnimTimer += delta;
+      if (this.walkAnimTimer > 150) {
+        this.walkAnimTimer = 0;
+        this.walkFrame = this.walkFrame === 0 ? 1 : 0;
+      }
       return;
     }
 
@@ -144,6 +164,12 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
       this.flyPhase += delta * 0.003;
       this.y = this.flyBaseY + Math.sin(this.flyPhase) * 40;
       body.setVelocityX(this.direction * ENEMY_FLYER_SPEED);
+      this.wingFlapTimer += delta;
+      if (this.wingFlapTimer > 120) {
+        this.wingFlapTimer = 0;
+        this.wingUp = !this.wingUp;
+        this.setTexture(this.wingUp ? 'enemy-flyer' : 'enemy-flyer-wing');
+      }
       if (this.x <= this.patrolMin) {
         this.direction = 1;
         this.setFlipX(true);
@@ -156,6 +182,8 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
 
     if (this.isShell) {
       body.setVelocityX(this.direction * ENEMY_SHELL_SPEED);
+      this.shellSpinAngle += delta * 0.02 * this.direction;
+      this.setAngle(this.shellSpinAngle * 30);
       return;
     }
 
@@ -174,6 +202,15 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
     }
 
     this.checkLedge();
+
+    if (Math.abs(body.velocity.x) > 10) {
+      this.walkAnimTimer += delta;
+      if (this.walkAnimTimer > 120) {
+        this.walkAnimTimer = 0;
+        this.walkFrame = this.walkFrame === 0 ? 1 : 0;
+        this.setTexture(this.walkFrame === 0 ? 'enemy-walker' : 'enemy-walker-run1');
+      }
+    }
   }
 
   stomp(): boolean {
@@ -185,11 +222,18 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
 
     if (this.enemyType === EnemyType.Boss) {
       this.bossHp -= 1;
+      this.setTint(0xff4444);
       this.scene.tweens.add({
         targets: this,
-        alpha: 0.4,
+        alpha: 0.3,
+        scaleX: 1.5,
+        scaleY: 1.5,
         duration: 80,
         yoyo: true,
+        onComplete: () => {
+          this.clearTint();
+          this.setScale(1.4);
+        },
       });
       if (this.bossHp <= 0) {
         this.defeat();

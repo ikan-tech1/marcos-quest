@@ -3,8 +3,12 @@ import { GameState } from '../systems/GameState';
 import type { AudioManager } from '../systems/AudioManager';
 import { spawnSparkle } from '../utils/effects';
 
+const COIN_FRAMES = ['coin', 'coin-side', 'coin-thin', 'coin-side'] as const;
+
 export class Coin extends Phaser.Physics.Arcade.Sprite {
   collected = false;
+  private spinTimer = 0;
+  private spinFrame = 0;
 
   constructor(scene: Phaser.Scene, x: number, y: number) {
     super(scene, x, y, 'coin');
@@ -24,15 +28,16 @@ export class Coin extends Phaser.Physics.Arcade.Sprite {
       repeat: -1,
       ease: 'Sine.easeInOut',
     });
+  }
 
-    scene.tweens.add({
-      targets: this,
-      scaleX: { from: 1, to: 0.35 },
-      duration: 350,
-      yoyo: true,
-      repeat: -1,
-      ease: 'Sine.easeInOut',
-    });
+  updateSpin(delta: number): void {
+    if (this.collected) return;
+    this.spinTimer += delta;
+    if (this.spinTimer > 80) {
+      this.spinTimer = 0;
+      this.spinFrame = (this.spinFrame + 1) % COIN_FRAMES.length;
+      this.setTexture(COIN_FRAMES[this.spinFrame]);
+    }
   }
 
   collect(audio: AudioManager): boolean {
@@ -45,6 +50,7 @@ export class Coin extends Phaser.Physics.Arcade.Sprite {
       targets: this,
       y: this.y - 40,
       alpha: 0,
+      scale: 1.4,
       duration: 300,
       onComplete: () => this.destroy(),
     });

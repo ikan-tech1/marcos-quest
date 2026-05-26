@@ -26,7 +26,7 @@ import {
 } from '../config/characters';
 import type { InputManager } from '../systems/InputManager';
 import type { AudioManager } from '../systems/AudioManager';
-import { squashStretch, spawnDust, spawnSparkle } from '../utils/effects';
+import { squashStretch, spawnDust, spawnSparkle, spawnStarTrail, spawnPowerUpBurst, spawnDeathBurst } from '../utils/effects';
 
 export class Player extends Phaser.Physics.Arcade.Sprite {
   private inputManager: InputManager;
@@ -48,6 +48,8 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
   private dashTrailTimer = 0;
   private runAnimTimer = 0;
   private runFrame = 0;
+  private starTrailTimer = 0;
+  private hurtFlashTimer = 0;
 
   playerState: PlayerState = PlayerState.Small;
   fireEnabled = false;
@@ -127,12 +129,19 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
 
     if (this.invincibleTimer > 0) {
       this.invincibleTimer -= delta;
-      this.alpha = Math.floor(this.invincibleTimer / 80) % 2 === 0 ? 0.5 : 1;
+      this.hurtFlashTimer += delta;
+      this.alpha = Math.floor(this.hurtFlashTimer / 80) % 2 === 0 ? 0.45 : 1;
+      this.setTint(Math.floor(this.hurtFlashTimer / 80) % 2 === 0 ? 0xff4444 : 0xffffff);
     } else if (this.starTimer > 0) {
       this.starTimer -= delta;
-      this.alpha = Math.floor(this.starTimer / 60) % 2 === 0 ? 0.7 : 1;
+      this.alpha = Math.floor(this.starTimer / 60) % 2 === 0 ? 0.85 : 1;
       const colors = [0xff0000, 0xff8800, 0xffff00, 0x00ff00, 0x0088ff, 0xff00ff];
       this.setTint(colors[Math.floor((STAR_DURATION_MS - this.starTimer) / 100) % colors.length]);
+      this.starTrailTimer -= delta;
+      if (this.starTrailTimer <= 0) {
+        spawnStarTrail(this.scene, this.x, this.y);
+        this.starTrailTimer = 60;
+      }
     } else {
       this.alpha = 1;
       this.clearTint();
@@ -230,9 +239,9 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     this.wasOnFloor = onFloor;
     if (onFloor && Math.abs(body.velocity.x) > 40) {
       this.runAnimTimer += delta;
-      if (this.runAnimTimer > 120) {
+      if (this.runAnimTimer > 90) {
         this.runAnimTimer = 0;
-        this.runFrame = this.runFrame === 0 ? 1 : 0;
+        this.runFrame = (this.runFrame + 1) % 3;
       }
     } else {
       this.runAnimTimer = 0;
@@ -319,6 +328,9 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
   }
 
   powerUp(state: PlayerState): void {
+    const accent = parseInt(this.character.accentColor.replace('#', ''), 16);
+    spawnPowerUpBurst(this.scene, this.x, this.y, accent);
+    squashStretch(this, 0.7, 1.4, 200);
     if (state === PlayerState.Big && this.playerState === PlayerState.Small) {
       this.playerState = PlayerState.Big;
       this.applyStateSize();
@@ -335,6 +347,8 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     this.starTimer = STAR_DURATION_MS;
     this.maxJumps = 3;
     this.jumpsRemaining = Math.max(this.jumpsRemaining, 3);
+    this.starTrailTimer = 0;
+    spawnPowerUpBurst(this.scene, this.x, this.y, 0xffff00);
     this.audio.playPowerUp();
   }
 
@@ -346,6 +360,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
       this.fireEnabled = false;
       this.applyStateSize();
       this.invincibleTimer = INVINCIBLE_FLASH_MS;
+      this.hurtFlashTimer = 0;
       this.audio.playHurt();
       return false;
     }
@@ -354,6 +369,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
       this.playerState = PlayerState.Small;
       this.applyStateSize();
       this.invincibleTimer = INVINCIBLE_FLASH_MS;
+      this.hurtFlashTimer = 0;
       this.audio.playHurt();
       return false;
     }
@@ -376,6 +392,8 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     const body = this.body as Phaser.Physics.Arcade.Body;
     body.setVelocity(0, -300);
     body.setAllowGravity(true);
+    const accent = parseInt(this.character.accentColor.replace('#', ''), 16);
+    spawnDeathBurst(this.scene, this.x, this.y, accent);
     this.scene.tweens.add({
       targets: this,
       alpha: 0,

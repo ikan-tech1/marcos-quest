@@ -23,7 +23,7 @@ import { Storage } from '../systems/Storage';
 import { EasterEggs } from '../systems/EasterEggs';
 import { LEVELS } from '../levels/levelData';
 import { LevelBuilder } from '../levels/LevelBuilder';
-import { screenShake, spawnDebris, spawnSparkle } from '../utils/effects';
+import { screenShake, spawnDebris, spawnSparkle, freezeFrame, spawnComboText, spawnPipeWarp, spawnSpringBurst, spawnFireImpact, squashStretch } from '../utils/effects';
 
 export class GameScene extends Phaser.Scene {
   private inputManager!: InputManager;
@@ -137,7 +137,9 @@ export class GameScene extends Phaser.Scene {
     });
 
     this.physics.add.overlap(this.projectiles, this.enemies, (proj, e) => {
-      (proj as Projectile).deactivate();
+      const projectile = proj as Projectile;
+      spawnFireImpact(this, projectile.x, projectile.y);
+      projectile.deactivate();
       (e as Enemy).defeat();
       GameState.addScore(200);
       this.audio.playStomp();
@@ -145,7 +147,9 @@ export class GameScene extends Phaser.Scene {
     });
 
     this.physics.add.overlap(this.projectiles, this.builtLevel.groundLayer, (proj) => {
-      (proj as Projectile).deactivate();
+      const projectile = proj as Projectile;
+      spawnFireImpact(this, projectile.x, projectile.y);
+      projectile.deactivate();
     });
 
     this.physics.add.overlap(this.enemies, this.enemies, (a, b) => {
@@ -193,19 +197,21 @@ export class GameScene extends Phaser.Scene {
       .image(0, GAME_HEIGHT - 200, 'bg-mountains')
       .setOrigin(0, 1)
       .setScrollFactor(0.12)
-      .setAlpha(theme === 'sky' ? 0.35 : 0.75);
+      .setAlpha(theme === 'sky' ? 0.35 : theme === 'underground' ? 0.2 : 0.75)
+      .setTint(theme === 'underground' ? 0x332244 : theme === 'castle' ? 0x553333 : 0xffffff);
 
     this.parallaxClouds = this.add
       .image(0, 24, 'bg-clouds')
       .setOrigin(0)
       .setScrollFactor(0.2)
-      .setAlpha(theme === 'underground' || theme === 'castle' ? 0.15 : 1);
+      .setAlpha(theme === 'underground' || theme === 'castle' ? 0.08 : theme === 'sky' ? 1 : 0.85);
 
     this.parallaxHills = this.add
       .image(0, GAME_HEIGHT - 8, 'bg-hills')
       .setOrigin(0, 1)
       .setScrollFactor(0.38)
-      .setAlpha(theme === 'underground' ? 0.25 : 0.9);
+      .setAlpha(theme === 'underground' ? 0.15 : theme === 'castle' ? 0.35 : 0.9)
+      .setTint(theme === 'underground' ? 0x224422 : theme === 'castle' ? 0x444444 : 0xffffff);
 
     this.cameras.main.setBackgroundColor(skyColor);
   }
@@ -284,6 +290,7 @@ export class GameScene extends Phaser.Scene {
       p.carryPlayer(this.player);
     });
     this.blocks.forEach((b) => b.updateCooldown(delta));
+    this.coins.forEach((c) => c.updateSpin(delta));
 
     GameState.updateCombo(delta);
 
@@ -314,9 +321,9 @@ export class GameScene extends Phaser.Scene {
 
   private updateCamera(): void {
     const body = this.player.body as Phaser.Physics.Arcade.Body;
-    const targetLook = Math.sign(body.velocity.x) * 80;
+    const targetLook = Math.sign(body.velocity.x) * 64;
     this.cameraLookAhead = Phaser.Math.Linear(this.cameraLookAhead, targetLook, 0.05);
-    this.cameras.main.setFollowOffset(this.cameraLookAhead, 0);
+    this.cameras.main.setFollowOffset(Math.round(this.cameraLookAhead), 0);
   }
 
   private checkBlockHits(): void {
@@ -334,7 +341,9 @@ export class GameScene extends Phaser.Scene {
         block.hitFromBelow();
         body.setVelocityY(SPRING_BOUNCE_VELOCITY);
         this.audio.playJump();
-        screenShake(this, 3, 80);
+        spawnSpringBurst(this, block.x, block.y);
+        screenShake(this, 4, 100);
+        squashStretch(this.player, 0.75, 1.25, 120);
         continue;
       }
 
@@ -413,7 +422,12 @@ export class GameScene extends Phaser.Scene {
       this.player.stompBounce();
       this.audio.playStomp();
       screenShake(this, 4, 100);
+      freezeFrame(this, 50);
+      const prevCombo = GameState.combo;
       GameState.addStomp();
+      if (GameState.combo > prevCombo && GameState.combo > 1) {
+        spawnComboText(this, this.player.x, this.player.y, GameState.combo, GameState.comboMultiplier);
+      }
     } else if (result === 'hurt') {
       const damaged = this.player.takeDamage();
       if (!damaged) {
@@ -448,20 +462,27 @@ export class GameScene extends Phaser.Scene {
     this.pipeWarping = true;
     this.audio.playPipe();
     pipe.setCooldown(1500);
+    spawnPipeWarp(this, this.player.x, this.player.y);
 
     this.tweens.add({
       targets: this.player,
       y: this.player.y + TILE_SIZE,
       alpha: 0,
+      scaleX: 0.5,
+      scaleY: 0.5,
       duration: 300,
       onComplete: () => {
         const exit = Block.worldPos(pipe.config.exitX, pipe.config.exitY);
         this.player.setPosition(exit.x, exit.y);
         this.player.setVelocity(0, 0);
+        this.player.setScale(0.5);
+        spawnPipeWarp(this, exit.x, exit.y);
         this.tweens.add({
           targets: this.player,
           y: exit.y - TILE_SIZE,
           alpha: 1,
+          scaleX: 1,
+          scaleY: 1,
           duration: 300,
           onComplete: () => {
             this.pipeWarping = false;
@@ -494,15 +515,24 @@ export class GameScene extends Phaser.Scene {
     body.setVelocity(0, 0);
     body.setAllowGravity(false);
 
+    const poleX = this.levelData.goalX * TILE_SIZE - TILE_SIZE / 2;
     const poleTop = this.builtLevel.flagPositions[0]?.y ?? this.player.y - 200;
     GameState.addFlagBonus(this.player.y, poleTop);
 
     this.tweens.add({
       targets: this.player,
-      y: this.builtLevel.height * TILE_SIZE - 48,
-      duration: 1200,
-      ease: 'Quad.easeIn',
-      onComplete: () => this.finishLevel(),
+      x: poleX,
+      duration: 400,
+      ease: 'Quad.easeOut',
+      onComplete: () => {
+        this.tweens.add({
+          targets: this.player,
+          y: this.builtLevel.height * TILE_SIZE - 48,
+          duration: 1000,
+          ease: 'Quad.easeIn',
+          onComplete: () => this.finishLevel(),
+        });
+      },
     });
   }
 

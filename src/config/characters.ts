@@ -88,7 +88,8 @@ export function getCharacterTextureKey(
   running: boolean,
   runFrame: number,
 ): string {
-  const runSuffix = running ? `-run${runFrame + 1}` : '';
+  const frame = Math.min(2, Math.max(0, runFrame));
+  const runSuffix = running ? `-run${frame + 1}` : '';
   if (state === 'small') return `${characterId}-small${runSuffix}`;
   if (state === 'blaze') return `${characterId}-blaze${runSuffix}`;
   return `${characterId}-big${runSuffix}`;
