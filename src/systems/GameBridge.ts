@@ -31,10 +31,20 @@ type Listener = (...args: unknown[]) => void;
 
 class GameBridgeClass {
   private listeners = new Map<string, Set<Listener>>();
+  private currentScreen: GameScreen = 'loading';
+  private lastScreenData?: unknown;
+  private lastHud?: HudState;
 
   on(event: string, fn: Listener): () => void {
     if (!this.listeners.has(event)) this.listeners.set(event, new Set());
     this.listeners.get(event)!.add(fn);
+
+    if (event === 'screen') {
+      fn({ screen: this.currentScreen, data: this.lastScreenData });
+    } else if (event === 'hud' && this.lastHud) {
+      fn(this.lastHud);
+    }
+
     return () => this.listeners.get(event)?.delete(fn);
   }
 
@@ -42,11 +52,18 @@ class GameBridgeClass {
     this.listeners.get(event)?.forEach((fn) => fn(data));
   }
 
+  getScreen(): GameScreen {
+    return this.currentScreen;
+  }
+
   setScreen(screen: GameScreen, data?: unknown): void {
+    this.currentScreen = screen;
+    this.lastScreenData = data;
     this.emit('screen', { screen, data });
   }
 
   updateHud(hud: HudState): void {
+    this.lastHud = hud;
     this.emit('hud', hud);
   }
 }

@@ -8,7 +8,11 @@ export class PreloadScene extends Phaser.Scene {
   }
 
   create(): void {
-    generateTextures(this);
+    try {
+      generateTextures(this);
+    } catch (error) {
+      console.error('[PreloadScene] texture generation failed', error);
+    }
     GameBridge.setScreen('menu');
     this.scene.stop();
   }

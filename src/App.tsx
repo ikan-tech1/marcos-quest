@@ -17,10 +17,9 @@ import { LoadingOverlay } from './ui/LoadingOverlay';
 import { LevelClearOverlay } from './ui/LevelClearOverlay';
 import { PauseOverlay } from './ui/PauseOverlay';
 import { TouchControls } from './ui/TouchControls';
-import { ArcadeCabinet } from './ui/ArcadeCabinet';
 import { UISounds } from './utils/uiSounds';
 import { useFullscreen } from './hooks/useFullscreen';
-import { computeCabinetLayout, computeGameScale } from './config/cabinetLayout';
+import { computeGameLayout, computeGameScale } from './config/gameLayout';
 import { getCharacterById } from './config/characters';
 
 const defaultHud: HudState = {
@@ -49,7 +48,6 @@ function emitToGameScene(event: string): void {
 const gameRefStatic = { current: null as Phaser.Game | null };
 
 const GAMEPLAY_SCREENS: GameScreen[] = ['playing', 'paused', 'level-clear', 'game-over'];
-const FULLSCREEN_UI_SCREENS: GameScreen[] = ['loading', 'menu'];
 
 export function App() {
   const gameRef = useRef<Phaser.Game | null>(null);
@@ -71,51 +69,26 @@ export function App() {
   const [viewport, setViewport] = useState({ w: window.innerWidth, h: window.innerHeight });
 
   const showGameViewport = GAMEPLAY_SCREENS.includes(screen);
-  const isFullScreenUI = FULLSCREEN_UI_SCREENS.includes(screen) || screen === 'game-over';
+  const showHeroWorld = screen === 'loading' || screen === 'menu';
 
-  const initGame = useCallback(() => {
-    if (gameRef.current || !containerRef.current) return;
-
-    gameRef.current = new Phaser.Game({
-      type: Phaser.AUTO,
-      width: GAME_WIDTH,
-      height: GAME_HEIGHT,
-      parent: containerRef.current,
-      backgroundColor: '#5bc0eb',
-      pixelArt: true,
-      roundPixels: true,
-      physics: {
-        default: 'arcade',
-        arcade: { gravity: { x: 0, y: GRAVITY }, debug: false },
-      },
-      scale: { mode: Phaser.Scale.NONE },
-      scene: [BootScene, PreloadScene, GameScene],
-    });
-    gameRefStatic.current = gameRef.current;
+  const transitionTo = useCallback((next: GameScreen, data?: unknown) => {
+    setScreenVisible(false);
+    window.setTimeout(() => {
+      setScreen(next);
+      if (next === 'game-over' && data) {
+        setGameOver(data as GameOverState);
+      }
+      setScreenVisible(true);
+    }, 120);
   }, []);
 
   useEffect(() => {
-    initGame();
     setShowTouch(isTouchDevice());
     UISounds.setEnabled(Storage.getSoundEnabled());
-    return () => {
-      gameRef.current?.destroy(true);
-      gameRef.current = null;
-      gameRefStatic.current = null;
-    };
-  }, [initGame]);
 
-  useEffect(() => {
     const unsubScreen = GameBridge.on('screen', (data) => {
       const payload = data as { screen: GameScreen; data?: unknown };
-      setScreenVisible(false);
-      window.setTimeout(() => {
-        setScreen(payload.screen);
-        setScreenVisible(true);
-      }, 120);
-      if (payload.screen === 'game-over' && payload.data) {
-        setGameOver(payload.data as GameOverState);
-      }
+      transitionTo(payload.screen, payload.data);
     });
 
     const unsubHud = GameBridge.on('hud', (data) => {
@@ -132,11 +105,7 @@ export function App() {
       const game = gameRef.current;
       if (game) {
         game.scene.start('GameScene', { levelIndex, characterId });
-        setScreenVisible(false);
-        window.setTimeout(() => {
-          setScreen('playing');
-          setScreenVisible(true);
-        }, 120);
+        transitionTo('playing');
       }
     });
 
@@ -147,11 +116,7 @@ export function App() {
         GameState.reset();
       }
       VirtualInput.reset();
-      setScreenVisible(false);
-      window.setTimeout(() => {
-        setScreen('menu');
-        setScreenVisible(true);
-      }, 120);
+      transitionTo('menu');
     });
 
     const unsubResume = GameBridge.on('resume-game', () => emitToGameScene('resume-game'));
@@ -164,6 +129,31 @@ export function App() {
       UISounds.setEnabled(enabled);
     });
 
+    const bridgeScreen = GameBridge.getScreen();
+    if (bridgeScreen !== 'loading') {
+      setScreen(bridgeScreen);
+      setScreenVisible(true);
+    }
+
+    if (!gameRef.current && containerRef.current) {
+      gameRef.current = new Phaser.Game({
+        type: Phaser.AUTO,
+        width: GAME_WIDTH,
+        height: GAME_HEIGHT,
+        parent: containerRef.current,
+        backgroundColor: '#5bc0eb',
+        pixelArt: true,
+        roundPixels: true,
+        physics: {
+          default: 'arcade',
+          arcade: { gravity: { x: 0, y: GRAVITY }, debug: false },
+        },
+        scale: { mode: Phaser.Scale.NONE },
+        scene: [BootScene, PreloadScene, GameScene],
+      });
+      gameRefStatic.current = gameRef.current;
+    }
+
     return () => {
       unsubScreen();
       unsubHud();
@@ -173,20 +163,23 @@ export function App() {
       unsubRestart();
       unsubPause();
       unsubSound();
+      gameRef.current?.destroy(true);
+      gameRef.current = null;
+      gameRefStatic.current = null;
     };
-  }, []);
+  }, [transitionTo]);
 
   useEffect(() => {
     const updateScale = () => {
       const w = window.innerWidth;
       const h = window.innerHeight;
       setViewport({ w, h });
-      setGameScale(computeGameScale(isFullscreen, w, h));
+      setGameScale(computeGameScale(w, h));
     };
     updateScale();
     window.addEventListener('resize', updateScale);
     return () => window.removeEventListener('resize', updateScale);
-  }, [isFullscreen]);
+  }, []);
 
   useEffect(() => {
     if (!showGameViewport && isFullscreen) {
@@ -208,7 +201,7 @@ export function App() {
 
   useEffect(() => {
     const game = gameRef.current;
-    if (!game) return;
+    if (!game || !showGameViewport) return;
     game.scale.setZoom(gameScale);
   }, [gameScale, showGameViewport]);
 
@@ -221,83 +214,68 @@ export function App() {
     UISounds.click();
   }, [soundEnabled]);
 
-  const layout = computeCabinetLayout(isFullscreen, viewport.w, viewport.h, gameScale);
-  const { scaledW, scaledH, crtLeft, crtTop } = layout;
+  const layout = computeGameLayout(viewport.w, viewport.h, gameScale);
+  const { scaledW, scaledH, left, top } = layout;
 
   const handleToggleFullscreen = useCallback(() => {
     UISounds.click();
     void toggleFullscreen();
   }, [toggleFullscreen]);
 
+  const handleCharacterChange = useCallback((id: string) => {
+    Storage.setSelectedCharacter(id);
+    emitToGameScene('change-character');
+  }, []);
+
   return (
     <div
       ref={shellRef}
-      className={`app-shell app-shell--${screen}${showGameViewport ? ' app-shell--gameplay' : ' app-shell--hero'}${isFullscreen ? ' app-shell--fullscreen' : ''}`}
+      className={`app-shell app-shell--${screen}${showGameViewport ? ' app-shell--gameplay' : ' app-shell--hero'}${isFullscreen ? ' app-shell--browser-fullscreen' : ''}`}
       data-transition={screenVisible ? 'in' : 'out'}
     >
-      <div className="world-sky" aria-hidden="true" />
-      <div className="world-sun" aria-hidden="true" />
+      {showHeroWorld && (
+        <>
+          <div className="world-sky" aria-hidden="true" />
+          <div className="world-sun" aria-hidden="true" />
+          <div className="world-clouds world-clouds--static" aria-hidden="true">
+            <div className="cloud cloud-static cloud-s1" />
+            <div className="cloud cloud-static cloud-s2" />
+            <div className="cloud cloud-static cloud-s3" />
+            <div className="cloud cloud-static cloud-s4" />
+          </div>
+          <div className="world-clouds world-clouds--drift" aria-hidden="true">
+            <div className="cloud cloud-1" />
+            <div className="cloud cloud-2" />
+            <div className="cloud cloud-3" />
+            <div className="cloud cloud-4" />
+            <div className="cloud cloud-5" />
+          </div>
+          <div className="world-hills" aria-hidden="true">
+            <div className="hill hill-far" />
+            <div className="hill hill-mid" />
+            <div className="hill hill-near" />
+          </div>
+          <div className="world-bushes" aria-hidden="true">
+            <div className="bush bush-1" />
+            <div className="bush bush-2" />
+            <div className="bush bush-3" />
+          </div>
+          <div className="world-floaters" aria-hidden="true">
+            <div className="floater floater-coin floater-1" />
+            <div className="floater floater-coin floater-2" />
+            <div className="floater floater-coin floater-3" />
+            <div className="floater floater-qblock floater-4" />
+            <div className="floater floater-brick floater-5" />
+            <div className="floater floater-pipe floater-pipe-left" />
+            <div className="floater floater-pipe floater-pipe-right" />
+          </div>
+          <div className="world-ground" aria-hidden="true">
+            <div className="ground-grass" />
+            <div className="ground-dirt" />
+          </div>
+        </>
+      )}
 
-      <div className="world-clouds world-clouds--static" aria-hidden="true">
-        <div className="cloud cloud-static cloud-s1" />
-        <div className="cloud cloud-static cloud-s2" />
-        <div className="cloud cloud-static cloud-s3" />
-        <div className="cloud cloud-static cloud-s4" />
-      </div>
-
-      <div className="world-clouds world-clouds--drift" aria-hidden="true">
-        <div className="cloud cloud-1" />
-        <div className="cloud cloud-2" />
-        <div className="cloud cloud-3" />
-        <div className="cloud cloud-4" />
-        <div className="cloud cloud-5" />
-      </div>
-
-      <div className="world-hills" aria-hidden="true">
-        <div className="hill hill-far" />
-        <div className="hill hill-mid" />
-        <div className="hill hill-near" />
-      </div>
-
-      <div className="world-bushes" aria-hidden="true">
-        <div className="bush bush-1" />
-        <div className="bush bush-2" />
-        <div className="bush bush-3" />
-      </div>
-
-      <div className={`world-floaters${showGameViewport ? ' world-floaters--gameplay' : ''}`} aria-hidden="true">
-        <div className="floater floater-coin floater-1" />
-        <div className="floater floater-coin floater-2" />
-        <div className="floater floater-coin floater-3" />
-        <div className="floater floater-coin floater-7" />
-        <div className="floater floater-qblock floater-4" />
-        <div className="floater floater-qblock floater-8" />
-        <div className="floater floater-brick floater-5" />
-        <div className="floater floater-brick floater-6" />
-        <div className="floater floater-pipe floater-pipe-left" />
-        <div className="floater floater-pipe floater-pipe-right" />
-        {showGameViewport && (
-          <>
-            <div className="floater floater-coin floater-g1" />
-            <div className="floater floater-coin floater-g2" />
-            <div className="floater floater-coin floater-g3" />
-            <div className="floater floater-qblock floater-g4" />
-            <div className="floater floater-brick floater-g5" />
-            <div className="floater floater-brick floater-g6" />
-            <div className="floater floater-pipe floater-g-pipe-l" />
-            <div className="floater floater-pipe floater-g-pipe-r" />
-            <div className="cloud cloud-static cloud-g1" />
-            <div className="cloud cloud-static cloud-g2" />
-          </>
-        )}
-      </div>
-
-      <div className="world-ground" aria-hidden="true">
-        <div className="ground-grass" />
-        <div className="ground-dirt" />
-      </div>
-
-      {/* Phaser canvas — fixed at CRT inset (cabinet) or letterbox (fullscreen) */}
       <div
         id="game-container"
         ref={containerRef}
@@ -307,40 +285,24 @@ export function App() {
             ? ({
                 width: scaledW,
                 height: scaledH,
-                left: crtLeft,
-                top: crtTop,
+                left,
+                top,
                 '--game-scale': gameScale,
               } as React.CSSProperties)
             : undefined
         }
       />
 
-      {showGameViewport && !isFullscreen && (
-        <ArcadeCabinet
-          layout={layout}
-          hud={hud}
-          screen={screen}
-          isPlaying={screen === 'playing' || screen === 'level-clear'}
-          onPause={() => GameBridge.emit('pause-game')}
-          onToggleFullscreen={handleToggleFullscreen}
-          onCharacterChange={(id) => {
-            Storage.setSelectedCharacter(id);
-            emitToGameScene('change-character');
-          }}
-        />
-      )}
-
       {showGameViewport && (
         <div
-          className={`game-viewport${isFullscreen ? ' game-viewport--fullscreen' : ' game-viewport--cabinet-window'}`}
-          style={{ width: scaledW, height: scaledH, left: crtLeft, top: crtTop }}
+          className="game-viewport game-viewport--fullscreen"
+          style={{ width: scaledW, height: scaledH, left, top }}
         >
-          {!isFullscreen && <div className="cabinet-crt-scanlines cabinet-crt-scanlines--overlay" aria-hidden="true" />}
           {(screen === 'playing' || screen === 'level-clear' || screen === 'paused') && (
             <HUD
               hud={hud}
               isFullscreen={isFullscreen}
-              showControls={isFullscreen}
+              showControls
               onPause={() => GameBridge.emit('pause-game')}
               onToggleFullscreen={handleToggleFullscreen}
             />
@@ -349,6 +311,8 @@ export function App() {
             <PauseOverlay
               soundEnabled={soundEnabled}
               isFullscreen={isFullscreen}
+              selectedCharacterId={Storage.getSelectedCharacter()}
+              onCharacterChange={handleCharacterChange}
               onToggleSound={toggleSound}
               onToggleFullscreen={handleToggleFullscreen}
             />
@@ -358,7 +322,7 @@ export function App() {
         </div>
       )}
 
-      <div className={`screen-layer${isFullScreenUI ? ' screen-layer--fullscreen' : ''}`}>
+      <div className={`screen-layer${screen === 'game-over' ? ' screen-layer--fullscreen' : ''}`}>
         {screen === 'loading' && <LoadingOverlay />}
         {screen === 'menu' && (
           <MenuOverlay
@@ -370,7 +334,7 @@ export function App() {
         {screen === 'game-over' && <GameOverOverlay state={gameOver} />}
       </div>
 
-      {!showGameViewport && screen !== 'loading' && (
+      {showHeroWorld && screen === 'menu' && (
         <footer className="site-footer site-footer--hero">
           EASHAN&apos;S QUEST
           {showTouch && <span className="mobile-hint"> · Touch ready</span>}

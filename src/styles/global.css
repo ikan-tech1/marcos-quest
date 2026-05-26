@@ -1,5 +1,4 @@
 @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Space+Grotesk:wght@400;500;600;700&display=swap');
-@import './arcade-cabinet.css';
 
 :root {
   --sky-top: #5bc0eb;
@@ -69,68 +68,39 @@ body {
   opacity: 1;
 }
 
-.app-shell--gameplay:not(.app-shell--fullscreen) .world-floaters {
-  opacity: 0.35;
-}
-
-.app-shell--gameplay:not(.app-shell--fullscreen) .world-ground {
-  opacity: 1;
-}
-
-.app-shell--gameplay .world-hills {
-  opacity: 1;
-}
-
-.app-shell--gameplay .world-bushes {
-  opacity: 0.9;
-}
-
-.app-shell--gameplay .world-sun {
-  opacity: 0.85;
-}
-
-/* Fullscreen: game edge-to-edge, hide decorative chrome */
-.app-shell--fullscreen {
+/* Gameplay: edge-to-edge canvas, dark letterbox */
+.app-shell--gameplay {
   background: #000;
 }
 
-.app-shell--fullscreen .world-sky,
-.app-shell--fullscreen .world-sun,
-.app-shell--fullscreen .world-clouds,
-.app-shell--fullscreen .world-hills,
-.app-shell--fullscreen .world-bushes,
-.app-shell--fullscreen .world-floaters,
-.app-shell--fullscreen .world-ground,
-.app-shell--fullscreen .site-footer {
-  opacity: 0;
-  visibility: hidden;
-  pointer-events: none;
-}
-
-.app-shell--fullscreen .game-viewport {
+.app-shell--gameplay .game-viewport {
   z-index: 50;
 }
 
-.app-shell--fullscreen .game-viewport--fullscreen .overlay-hud {
+.app-shell--gameplay .game-viewport--fullscreen .overlay-hud {
   padding: 6px 8px;
 }
 
-.app-shell--fullscreen .hud-plank {
+.app-shell--gameplay .hud-plank {
   padding: 4px 8px;
 }
 
-.app-shell--fullscreen .hud-plank--left,
-.app-shell--fullscreen .hud-plank--right {
+.app-shell--gameplay .hud-plank--left,
+.app-shell--gameplay .hud-plank--right {
   min-width: 80px;
 }
 
-.app-shell--fullscreen .hud-value {
+.app-shell--gameplay .hud-value {
   font-size: 0.48rem;
 }
 
-.app-shell--fullscreen .hud-controls {
+.app-shell--gameplay .hud-controls {
   top: 6px;
   right: 6px;
+}
+
+.app-shell--browser-fullscreen .overlay-hud {
+  padding-top: max(6px, env(safe-area-inset-top, 0px));
 }
 
 .app-shell[data-transition='out'] .screen-layer,
@@ -630,8 +600,11 @@ body {
 #game-container.game-container--hidden {
   visibility: hidden;
   pointer-events: none;
-  left: -9999px;
-  top: -9999px;
+  opacity: 0;
+  width: 1px;
+  height: 1px;
+  left: 0;
+  top: 0;
 }
 
 #game-container.game-container--live {
@@ -649,14 +622,6 @@ body {
   position: fixed;
   z-index: 20;
   pointer-events: none;
-}
-
-.game-viewport--cabinet-window {
-  z-index: 20;
-}
-
-.game-viewport--cabinet-window .overlay-hud {
-  padding: 8px;
 }
 
 .game-viewport > * {

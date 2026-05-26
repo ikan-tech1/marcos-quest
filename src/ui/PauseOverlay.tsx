@@ -1,9 +1,14 @@
+import { useState } from 'react';
 import { GameBridge } from '../systems/GameBridge';
+import { Storage } from '../systems/Storage';
 import { UISounds } from '../utils/uiSounds';
+import { CharacterSelect } from './CharacterSelect';
 
 interface Props {
   soundEnabled: boolean;
   isFullscreen?: boolean;
+  selectedCharacterId?: string;
+  onCharacterChange?: (characterId: string) => void;
   onToggleSound: () => void;
   onToggleFullscreen?: () => void;
 }
@@ -11,9 +16,12 @@ interface Props {
 export function PauseOverlay({
   soundEnabled,
   isFullscreen = false,
+  selectedCharacterId = Storage.getSelectedCharacter(),
+  onCharacterChange,
   onToggleSound,
   onToggleFullscreen,
 }: Props) {
+  const [characterId, setCharacterId] = useState(selectedCharacterId);
   const resume = () => {
     UISounds.confirm();
     GameBridge.emit('resume-game');
@@ -43,6 +51,14 @@ export function PauseOverlay({
         <div className="wood-sign-board">
           <h2 className="pause-title">⏸ PAUSED</h2>
           <p className="pause-subtitle">The adventure waits...</p>
+          <CharacterSelect
+            compact
+            selectedId={characterId}
+            onSelect={(id) => {
+              setCharacterId(id);
+              onCharacterChange?.(id);
+            }}
+          />
           <div className="pause-actions">
             <button type="button" className="btn-primary btn-primary--wide" onClick={resume}>
               ▶ RESUME
