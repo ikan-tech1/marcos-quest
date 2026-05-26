@@ -591,7 +591,6 @@ export class GameScene extends Phaser.Scene {
 
   private runFlagTopPause(poleX: number, poleTopY: number, poleBottomY: number): void {
     this.player.setPosition(poleX, poleTopY);
-    this.flagTouchY = poleTopY;
     GameState.addFlagBonus(this.flagTouchY, poleTopY, poleBottomY);
     this.syncHud();
 
