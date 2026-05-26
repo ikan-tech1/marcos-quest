@@ -1,4 +1,5 @@
 @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Space+Grotesk:wght@400;500;600;700&display=swap');
+@import './arcade-cabinet.css';
 
 :root {
   --sky-top: #5bc0eb;
@@ -68,8 +69,12 @@ body {
   opacity: 1;
 }
 
-.app-shell--gameplay .world-ground {
-  opacity: 0.85;
+.app-shell--gameplay:not(.app-shell--fullscreen) .world-floaters {
+  opacity: 0.35;
+}
+
+.app-shell--gameplay:not(.app-shell--fullscreen) .world-ground {
+  opacity: 1;
 }
 
 .app-shell--gameplay .world-hills {
@@ -617,7 +622,7 @@ body {
 
 #game-container {
   position: fixed;
-  z-index: 15;
+  z-index: 17;
   line-height: 0;
   overflow: hidden;
 }
@@ -644,6 +649,14 @@ body {
   position: fixed;
   z-index: 20;
   pointer-events: none;
+}
+
+.game-viewport--cabinet-window {
+  z-index: 20;
+}
+
+.game-viewport--cabinet-window .overlay-hud {
+  padding: 8px;
 }
 
 .game-viewport > * {

@@ -5,6 +5,7 @@ export interface HudState {
   coins: number;
   lives: number;
   world: string;
+  characterName: string;
   combo: number;
   comboMultiplier: number;
   levelIndex: number;
@@ -23,6 +24,7 @@ export interface GameOverState {
 
 export interface StartGamePayload {
   levelIndex?: number;
+  characterId?: string;
 }
 
 type Listener = (...args: unknown[]) => void;

@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { CHARACTERS } from '../config/characters';
 
 function drawRect(g: Phaser.GameObjects.Graphics, w: number, h: number, color: number, border?: number): void {
   g.fillStyle(color, 1);
@@ -6,6 +7,245 @@ function drawRect(g: Phaser.GameObjects.Graphics, w: number, h: number, color: n
   if (border !== undefined) {
     g.lineStyle(2, border, 1);
     g.strokeRect(1, 1, w - 2, h - 2);
+  }
+}
+
+interface CharColors {
+  head: number;
+  headShade: number;
+  body: number;
+  bodyShade: number;
+  accent: number;
+  skin: number;
+  boots: number;
+  bootsShade: number;
+  eye: number;
+}
+
+const PALETTES: Record<string, CharColors> = {
+  eashan: {
+    head: 0xe74c3c,
+    headShade: 0xc0392b,
+    body: 0x3498db,
+    bodyShade: 0x2471a3,
+    accent: 0xf5deb3,
+    skin: 0xffdbac,
+    boots: 0x2c3e50,
+    bootsShade: 0x1a252f,
+    eye: 0x2c3e50,
+  },
+  luna: {
+    head: 0x9b59b6,
+    headShade: 0x7d3c98,
+    body: 0x6c3483,
+    bodyShade: 0x512e5f,
+    accent: 0xe056fd,
+    skin: 0xffeaa7,
+    boots: 0x5f27cd,
+    bootsShade: 0x341f97,
+    eye: 0x2d3436,
+  },
+  rex: {
+    head: 0x27ae60,
+    headShade: 0x1e8449,
+    body: 0x2ecc71,
+    bodyShade: 0x1a8f4a,
+    accent: 0x145a32,
+    skin: 0xd4a574,
+    boots: 0x1a5276,
+    bootsShade: 0x0e3250,
+    eye: 0x1b2631,
+  },
+  zap: {
+    head: 0xf1c40f,
+    headShade: 0xd4ac0d,
+    body: 0xf39c12,
+    bodyShade: 0xca7a0a,
+    accent: 0xfff176,
+    skin: 0xffdbac,
+    boots: 0xe67e22,
+    bootsShade: 0xba4a00,
+    eye: 0x2c3e50,
+  },
+};
+
+const BLAZE_PALETTES: Record<string, CharColors> = {
+  eashan: { ...PALETTES.eashan, head: 0xff6600, headShade: 0xcc5200, body: 0xff9933, bodyShade: 0xe67e22 },
+  luna: { ...PALETTES.luna, head: 0xff44aa, headShade: 0xcc2288, body: 0xff66cc, bodyShade: 0xdd44aa },
+  rex: { ...PALETTES.rex, head: 0x00cc66, headShade: 0x009944, body: 0x44ff88, bodyShade: 0x22cc66 },
+  zap: { ...PALETTES.zap, head: 0xffff00, headShade: 0xcccc00, body: 0xffee44, bodyShade: 0xffcc00 },
+};
+
+type Pose = 'idle' | 'run1' | 'run2';
+
+function drawEashan(g: Phaser.GameObjects.Graphics, c: CharColors, big: boolean, pose: Pose): void {
+  const h = big ? 48 : 28;
+  // Cap brim
+  g.fillStyle(c.headShade, 1);
+  g.fillRect(2, big ? 8 : 6, 20, 3);
+  // Cap
+  g.fillStyle(c.head, 1);
+  g.fillRect(4, 0, 16, big ? 10 : 8);
+  g.fillStyle(c.headShade, 1);
+  g.fillRect(4, 0, 4, big ? 6 : 5);
+  // Face
+  g.fillStyle(c.skin, 1);
+  g.fillRect(6, big ? 6 : 5, 12, big ? 6 : 5);
+  g.fillStyle(c.eye, 1);
+  g.fillRect(8, big ? 8 : 7, 2, 2);
+  g.fillRect(14, big ? 8 : 7, 2, 2);
+  // Overalls
+  g.fillStyle(c.body, 1);
+  g.fillRect(4, big ? 12 : 10, 16, big ? 20 : 10);
+  g.fillStyle(c.bodyShade, 1);
+  g.fillRect(4, big ? 12 : 10, 4, big ? 20 : 10);
+  g.fillRect(16, big ? 12 : 10, 4, big ? 20 : 10);
+  g.fillStyle(c.accent, 1);
+  g.fillRect(10, big ? 14 : 11, 4, big ? 6 : 4);
+  // Boots
+  const lFoot = pose === 'run1' ? 0 : pose === 'run2' ? 2 : 0;
+  const rFoot = pose === 'run1' ? 2 : pose === 'run2' ? 0 : 0;
+  g.fillStyle(c.boots, 1);
+  g.fillRect(5 + lFoot, h - 6 + (pose === 'run2' ? -2 : 0), 5, 6);
+  g.fillRect(14 - rFoot, h - 6 + (pose === 'run1' ? -2 : 0), 5, 6);
+  g.fillStyle(c.bootsShade, 1);
+  g.fillRect(5 + lFoot, h - 2, 5, 2);
+  g.fillRect(14 - rFoot, h - 2, 5, 2);
+}
+
+function drawLuna(g: Phaser.GameObjects.Graphics, c: CharColors, big: boolean, pose: Pose): void {
+  const h = big ? 48 : 28;
+  // Flowing hair / ponytail
+  g.fillStyle(c.head, 1);
+  g.fillRect(3, 0, 18, big ? 9 : 7);
+  g.fillRect(18, 2, 4, big ? 14 : 8);
+  g.fillStyle(c.headShade, 1);
+  g.fillRect(3, 0, 6, big ? 9 : 7);
+  // Headband
+  g.fillStyle(c.accent, 1);
+  g.fillRect(4, big ? 5 : 4, 16, 2);
+  // Face
+  g.fillStyle(c.skin, 1);
+  g.fillRect(6, big ? 6 : 5, 12, big ? 5 : 4);
+  g.fillStyle(c.eye, 1);
+  g.fillRect(8, big ? 7 : 6, 2, 2);
+  g.fillRect(14, big ? 7 : 6, 2, 2);
+  // Sleek suit
+  g.fillStyle(c.body, 1);
+  g.fillRect(5, big ? 11 : 9, 14, big ? 21 : 11);
+  g.fillStyle(c.bodyShade, 1);
+  g.fillRect(5, big ? 11 : 9, 3, big ? 21 : 11);
+  g.fillStyle(c.accent, 1);
+  g.fillRect(11, big ? 13 : 10, 2, big ? 16 : 8);
+  // Speed stripes
+  g.fillStyle(c.accent, 0.6);
+  g.fillRect(7, big ? 18 : 14, 10, 1);
+  // Boots
+  const lOff = pose === 'run1' ? -1 : pose === 'run2' ? 1 : 0;
+  const rOff = pose === 'run1' ? 1 : pose === 'run2' ? -1 : 0;
+  g.fillStyle(c.boots, 1);
+  g.fillRect(6 + lOff, h - 5 + (pose === 'run2' ? -2 : 0), 4, 5);
+  g.fillRect(14 + rOff, h - 5 + (pose === 'run1' ? -2 : 0), 4, 5);
+}
+
+function drawRex(g: Phaser.GameObjects.Graphics, c: CharColors, big: boolean, pose: Pose): void {
+  const h = big ? 48 : 28;
+  // Helmet
+  g.fillStyle(c.head, 1);
+  g.fillRect(2, 0, 20, big ? 11 : 9);
+  g.fillStyle(c.headShade, 1);
+  g.fillRect(2, 0, 20, 3);
+  g.fillRect(2, 0, 4, big ? 11 : 9);
+  // Visor
+  g.fillStyle(c.accent, 1);
+  g.fillRect(5, big ? 5 : 4, 14, big ? 4 : 3);
+  g.fillStyle(c.skin, 1);
+  g.fillRect(7, big ? 6 : 5, 4, 2);
+  g.fillRect(13, big ? 6 : 5, 4, 2);
+  // Broad shoulders + armor
+  g.fillStyle(c.body, 1);
+  g.fillRect(2, big ? 11 : 9, 20, big ? 21 : 11);
+  g.fillStyle(c.bodyShade, 1);
+  g.fillRect(2, big ? 11 : 9, 4, big ? 21 : 11);
+  g.fillRect(18, big ? 11 : 9, 4, big ? 21 : 11);
+  g.fillStyle(c.accent, 1);
+  g.fillRect(8, big ? 14 : 11, 8, big ? 8 : 5);
+  // Heavy boots
+  g.fillStyle(c.boots, 1);
+  g.fillRect(4 + (pose === 'run1' ? 0 : 0), h - 7 + (pose === 'run2' ? -1 : 0), 7, 7);
+  g.fillRect(13 + (pose === 'run2' ? 0 : 0), h - 7 + (pose === 'run1' ? -1 : 0), 7, 7);
+  g.fillStyle(c.bootsShade, 1);
+  g.fillRect(4, h - 2, 7, 2);
+  g.fillRect(13, h - 2, 7, 2);
+}
+
+function drawZap(g: Phaser.GameObjects.Graphics, c: CharColors, big: boolean, pose: Pose): void {
+  const h = big ? 48 : 28;
+  // Spiky hair
+  g.fillStyle(c.head, 1);
+  g.fillRect(5, 2, 14, big ? 7 : 5);
+  g.fillTriangle(5, 2, 7, 0, 9, 2);
+  g.fillTriangle(9, 1, 12, 0, 14, 2);
+  g.fillTriangle(14, 2, 17, 0, 19, 3);
+  g.fillStyle(c.headShade, 1);
+  g.fillRect(5, 2, 4, big ? 7 : 5);
+  // Face
+  g.fillStyle(c.skin, 1);
+  g.fillRect(7, big ? 7 : 6, 10, big ? 5 : 4);
+  g.fillStyle(c.eye, 1);
+  g.fillRect(9, big ? 8 : 7, 2, 2);
+  g.fillRect(14, big ? 8 : 7, 2, 2);
+  // Slim suit + lightning bolt
+  g.fillStyle(c.body, 1);
+  g.fillRect(6, big ? 12 : 10, 12, big ? 20 : 10);
+  g.fillStyle(c.bodyShade, 1);
+  g.fillRect(6, big ? 12 : 10, 2, big ? 20 : 10);
+  g.fillStyle(c.accent, 1);
+  g.fillRect(11, big ? 14 : 11, 2, 3);
+  g.fillRect(9, big ? 17 : 14, 6, 2);
+  g.fillRect(11, big ? 19 : 16, 2, 3);
+  // Electric glow on blaze handled by palette
+  // Slim boots
+  g.fillStyle(c.boots, 1);
+  g.fillRect(7 + (pose === 'run1' ? -1 : pose === 'run2' ? 1 : 0), h - 5 + (pose === 'run2' ? -2 : 0), 4, 5);
+  g.fillRect(13 + (pose === 'run2' ? -1 : pose === 'run1' ? 1 : 0), h - 5 + (pose === 'run1' ? -2 : 0), 4, 5);
+}
+
+const DRAWERS: Record<string, typeof drawEashan> = {
+  eashan: drawEashan,
+  luna: drawLuna,
+  rex: drawRex,
+  zap: drawZap,
+};
+
+function generateCharacterTextures(
+  g: Phaser.GameObjects.Graphics,
+  characterId: string,
+): void {
+  const drawer = DRAWERS[characterId] ?? drawEashan;
+  const palette = PALETTES[characterId] ?? PALETTES.eashan;
+  const blazePalette = BLAZE_PALETTES[characterId] ?? BLAZE_PALETTES.eashan;
+
+  const variants: { prefix: string; big: boolean; colors: CharColors }[] = [
+    { prefix: `${characterId}-small`, big: false, colors: palette },
+    { prefix: `${characterId}-big`, big: true, colors: palette },
+    { prefix: `${characterId}-blaze`, big: true, colors: blazePalette },
+  ];
+
+  for (const { prefix, big, colors } of variants) {
+    const h = big ? 48 : 28;
+    const w = 24;
+    drawer(g, colors, big, 'idle');
+    g.generateTexture(prefix, w, h);
+    g.clear();
+
+    drawer(g, colors, big, 'run1');
+    g.generateTexture(`${prefix}-run1`, w, h);
+    g.clear();
+
+    drawer(g, colors, big, 'run2');
+    g.generateTexture(`${prefix}-run2`, w, h);
+    g.clear();
   }
 }
 
@@ -68,99 +308,10 @@ export function generateTextures(scene: Phaser.Scene): void {
   g.generateTexture('tile-flag', 32, 32);
   g.clear();
 
-  // Player small (24x28)
-  g.fillStyle(0xe74c3c, 1);
-  g.fillRect(4, 0, 16, 10);
-  g.fillStyle(0x3498db, 1);
-  g.fillRect(4, 10, 16, 12);
-  g.fillStyle(0x2c3e50, 1);
-  g.fillRect(6, 22, 5, 6);
-  g.fillRect(13, 22, 5, 6);
-  g.generateTexture('player-small', 24, 28);
-  g.clear();
-
-  // Player small run frames
-  g.fillStyle(0xe74c3c, 1);
-  g.fillRect(4, 0, 16, 10);
-  g.fillStyle(0x3498db, 1);
-  g.fillRect(4, 10, 16, 12);
-  g.fillStyle(0x2c3e50, 1);
-  g.fillRect(5, 22, 5, 6);
-  g.fillRect(14, 20, 5, 8);
-  g.generateTexture('player-small-run1', 24, 28);
-  g.clear();
-
-  g.fillStyle(0xe74c3c, 1);
-  g.fillRect(4, 0, 16, 10);
-  g.fillStyle(0x3498db, 1);
-  g.fillRect(4, 10, 16, 12);
-  g.fillStyle(0x2c3e50, 1);
-  g.fillRect(14, 22, 5, 6);
-  g.fillRect(5, 20, 5, 8);
-  g.generateTexture('player-small-run2', 24, 28);
-  g.clear();
-
-  // Player big (24x48)
-  g.fillStyle(0xe74c3c, 1);
-  g.fillRect(4, 0, 16, 10);
-  g.fillStyle(0x3498db, 1);
-  g.fillRect(2, 10, 20, 22);
-  g.fillStyle(0x2c3e50, 1);
-  g.fillRect(4, 32, 6, 8);
-  g.fillRect(14, 32, 6, 8);
-  g.generateTexture('player-big', 24, 48);
-  g.clear();
-
-  g.fillStyle(0xe74c3c, 1);
-  g.fillRect(4, 0, 16, 10);
-  g.fillStyle(0x3498db, 1);
-  g.fillRect(2, 10, 20, 22);
-  g.fillStyle(0x2c3e50, 1);
-  g.fillRect(3, 32, 6, 8);
-  g.fillRect(15, 30, 6, 10);
-  g.generateTexture('player-big-run1', 24, 48);
-  g.clear();
-
-  g.fillStyle(0xe74c3c, 1);
-  g.fillRect(4, 0, 16, 10);
-  g.fillStyle(0x3498db, 1);
-  g.fillRect(2, 10, 20, 22);
-  g.fillStyle(0x2c3e50, 1);
-  g.fillRect(15, 32, 6, 8);
-  g.fillRect(3, 30, 6, 10);
-  g.generateTexture('player-big-run2', 24, 48);
-  g.clear();
-
-  // Player blaze tint overlay
-  g.fillStyle(0xff6600, 1);
-  g.fillRect(4, 0, 16, 10);
-  g.fillStyle(0xff9933, 1);
-  g.fillRect(2, 10, 20, 22);
-  g.fillStyle(0x2c3e50, 1);
-  g.fillRect(4, 32, 6, 8);
-  g.fillRect(14, 32, 6, 8);
-  g.generateTexture('player-blaze', 24, 48);
-  g.clear();
-
-  g.fillStyle(0xff6600, 1);
-  g.fillRect(4, 0, 16, 10);
-  g.fillStyle(0xff9933, 1);
-  g.fillRect(2, 10, 20, 22);
-  g.fillStyle(0x2c3e50, 1);
-  g.fillRect(3, 32, 6, 8);
-  g.fillRect(15, 30, 6, 10);
-  g.generateTexture('player-blaze-run1', 24, 48);
-  g.clear();
-
-  g.fillStyle(0xff6600, 1);
-  g.fillRect(4, 0, 16, 10);
-  g.fillStyle(0xff9933, 1);
-  g.fillRect(2, 10, 20, 22);
-  g.fillStyle(0x2c3e50, 1);
-  g.fillRect(15, 32, 6, 8);
-  g.fillRect(3, 30, 6, 10);
-  g.generateTexture('player-blaze-run2', 24, 48);
-  g.clear();
+  // All playable characters
+  for (const character of CHARACTERS) {
+    generateCharacterTextures(g, character.id);
+  }
 
   // Walker enemy (28x24)
   g.fillStyle(0x8b4513, 1);
@@ -183,13 +334,11 @@ export function generateTextures(scene: Phaser.Scene): void {
   g.generateTexture('enemy-shell', 28, 24);
   g.clear();
 
-  // Shell only
   g.fillStyle(0x27ae60, 1);
   g.fillEllipse(14, 12, 24, 20);
   g.generateTexture('enemy-shell-only', 28, 24);
   g.clear();
 
-  // Flyer enemy (28x20)
   g.fillStyle(0x9b59b6, 1);
   g.fillEllipse(14, 12, 24, 16);
   g.fillStyle(0xe74c3c, 1);
@@ -198,7 +347,6 @@ export function generateTextures(scene: Phaser.Scene): void {
   g.generateTexture('enemy-flyer', 28, 20);
   g.clear();
 
-  // Coin (16x16) — shiny gold with highlight
   g.fillStyle(0xffaa00, 1);
   g.fillCircle(8, 8, 7);
   g.fillStyle(0xffd700, 1);
@@ -217,7 +365,6 @@ export function generateTextures(scene: Phaser.Scene): void {
   g.generateTexture('coin-side', 16, 16);
   g.clear();
 
-  // Power-ups
   g.fillStyle(0xff4444, 1);
   g.fillRoundedRect(0, 4, 20, 16, 4);
   g.fillStyle(0xffffff, 1);
@@ -247,19 +394,16 @@ export function generateTextures(scene: Phaser.Scene): void {
   g.generateTexture('powerup-star', 20, 24);
   g.clear();
 
-  // Projectile
   g.fillStyle(0xff4400, 1);
   g.fillCircle(6, 6, 5);
   g.generateTexture('projectile', 12, 12);
   g.clear();
 
-  // Particle
   g.fillStyle(0xffffff, 1);
   g.fillRect(0, 0, 4, 4);
   g.generateTexture('particle', 4, 4);
   g.clear();
 
-  // Parallax layers
   g.fillStyle(0x5bc0eb, 1);
   g.fillRect(0, 0, 800, 480);
   g.generateTexture('bg-sky', 800, 480);
@@ -290,7 +434,6 @@ export function generateTextures(scene: Phaser.Scene): void {
   g.generateTexture('bg-mountains', 800, 160);
   g.clear();
 
-  // Moving platform (wider, glowing)
   g.fillStyle(0x00f5ff, 0.3);
   g.fillRect(0, 0, 96, 12);
   g.fillStyle(0x4488aa, 1);
@@ -300,12 +443,10 @@ export function generateTextures(scene: Phaser.Scene): void {
   g.generateTexture('tile-moving', 96, 12);
   g.clear();
 
-  // Empty block (used question block)
   drawRect(g, 32, 32, 0x888888, 0x555555);
   g.generateTexture('tile-used', 32, 32);
   g.clear();
 
-  // Theme ground tiles
   drawRect(g, 32, 32, 0x4a3728);
   g.fillStyle(0x6b5344, 1);
   g.fillRect(2, 2, 28, 8);
@@ -322,21 +463,18 @@ export function generateTextures(scene: Phaser.Scene): void {
   g.generateTexture('tile-ground-castle', 32, 32);
   g.clear();
 
-  // Coin block
   drawRect(g, 32, 32, 0xf4a020, 0xc47a00);
   g.fillStyle(0xffd700, 1);
   g.fillCircle(16, 16, 8);
   g.generateTexture('tile-coin-block', 32, 32);
   g.clear();
 
-  // Spring / note block
   drawRect(g, 32, 32, 0x44aa44, 0x228822);
   g.fillStyle(0xffffff, 1);
   g.fillRect(8, 10, 16, 12);
   g.generateTexture('tile-spring', 32, 32);
   g.clear();
 
-  // Piranha plant
   g.fillStyle(0x228822, 1);
   g.fillRect(10, 16, 8, 12);
   g.fillStyle(0xff2244, 1);
@@ -347,7 +485,6 @@ export function generateTextures(scene: Phaser.Scene): void {
   g.generateTexture('enemy-piranha', 28, 28);
   g.clear();
 
-  // Boss — Iron Guard
   g.fillStyle(0x444444, 1);
   g.fillRect(4, 8, 36, 36);
   g.fillStyle(0xffcc00, 1);
@@ -358,7 +495,6 @@ export function generateTextures(scene: Phaser.Scene): void {
   g.generateTexture('enemy-boss', 44, 44);
   g.clear();
 
-  // 1-Up mushroom
   g.fillStyle(0x00cc44, 1);
   g.fillEllipse(10, 14, 18, 14);
   g.fillStyle(0xffffff, 1);

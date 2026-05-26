@@ -19,6 +19,11 @@ import {
   WALL_JUMP_VELOCITY_Y,
   WALL_SLIDE_SPEED,
 } from '../config/constants';
+import {
+  type CharacterDefinition,
+  getCharacterById,
+  getCharacterTextureKey,
+} from '../config/characters';
 import type { InputManager } from '../systems/InputManager';
 import type { AudioManager } from '../systems/AudioManager';
 import { squashStretch, spawnDust, spawnSparkle } from '../utils/effects';
@@ -26,6 +31,7 @@ import { squashStretch, spawnDust, spawnSparkle } from '../utils/effects';
 export class Player extends Phaser.Physics.Arcade.Sprite {
   private inputManager: InputManager;
   private audio: AudioManager;
+  private character: CharacterDefinition;
   private coyoteTimer = 0;
   private jumpBufferTimer = 0;
   private dashTimer = 0;
@@ -46,16 +52,53 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
   playerState: PlayerState = PlayerState.Small;
   fireEnabled = false;
 
-  constructor(scene: Phaser.Scene, x: number, y: number, input: InputManager, audio: AudioManager) {
-    super(scene, x, y, 'player-small');
+  constructor(
+    scene: Phaser.Scene,
+    x: number,
+    y: number,
+    input: InputManager,
+    audio: AudioManager,
+    characterId?: string,
+  ) {
+    const character = getCharacterById(characterId ?? 'eashan');
+    super(scene, x, y, getCharacterTextureKey(character.id, 'small', false, 0));
     scene.add.existing(this);
     scene.physics.add.existing(this);
     this.inputManager = input;
     this.audio = audio;
+    this.character = character;
     this.setCollideWorldBounds(false);
     this.setDragX(0);
     this.setDepth(10);
     this.applyStateSize();
+  }
+
+  get characterId(): string {
+    return this.character.id;
+  }
+
+  get characterName(): string {
+    return this.character.name;
+  }
+
+  private get speed(): number {
+    return PLAYER_SPEED * this.character.stats.speedMult;
+  }
+
+  private get jumpVelocity(): number {
+    return JUMP_VELOCITY * this.character.stats.jumpMult;
+  }
+
+  private get doubleJumpVelocity(): number {
+    return DOUBLE_JUMP_VELOCITY * this.character.stats.jumpMult;
+  }
+
+  private get wallJumpVelocityY(): number {
+    return WALL_JUMP_VELOCITY_Y * this.character.stats.jumpMult;
+  }
+
+  private get dashCooldown(): number {
+    return DASH_COOLDOWN_MS * this.character.stats.dashCooldownMult;
   }
 
   get isInvincible(): boolean {
@@ -139,12 +182,14 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     } else {
       body.setAccelerationX(0);
       if (onFloor) {
-        body.setVelocityX(Phaser.Math.Linear(body.velocity.x, 0, PLAYER_FRICTION * (delta / 1000) / PLAYER_SPEED));
+        body.setVelocityX(
+          Phaser.Math.Linear(body.velocity.x, 0, PLAYER_FRICTION * (delta / 1000) / this.speed),
+        );
       }
     }
 
-    if (Math.abs(body.velocity.x) > PLAYER_SPEED) {
-      body.setVelocityX(Math.sign(body.velocity.x) * PLAYER_SPEED);
+    if (Math.abs(body.velocity.x) > this.speed) {
+      body.setVelocityX(Math.sign(body.velocity.x) * this.speed);
     }
 
     if (onWall && body.velocity.y > 0) {
@@ -199,12 +244,12 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
   private doJump(isDouble: boolean): void {
     const body = this.body as Phaser.Physics.Arcade.Body;
     if (isDouble) {
-      body.setVelocityY(DOUBLE_JUMP_VELOCITY);
+      body.setVelocityY(this.doubleJumpVelocity);
       this.jumpsRemaining -= 1;
       spawnSparkle(this.scene, this.x, this.y + this.displayHeight / 2);
       squashStretch(this, 0.9, 1.1, 60);
     } else {
-      body.setVelocityY(JUMP_VELOCITY);
+      body.setVelocityY(this.jumpVelocity);
       this.jumpsRemaining = this.maxJumps - 1;
     }
     this.audio.playJump();
@@ -212,7 +257,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
 
   private doWallJump(wallDir: number): void {
     const body = this.body as Phaser.Physics.Arcade.Body;
-    body.setVelocity(WALL_JUMP_VELOCITY_X * -wallDir, WALL_JUMP_VELOCITY_Y);
+    body.setVelocity(WALL_JUMP_VELOCITY_X * -wallDir, this.wallJumpVelocityY);
     this.facing = -wallDir;
     this.coyoteTimer = 0;
     this.jumpsRemaining = 1;
@@ -222,7 +267,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
   private startDash(): void {
     this.isDashing = true;
     this.dashTimer = DASH_DURATION_MS;
-    this.dashCooldownTimer = DASH_COOLDOWN_MS;
+    this.dashCooldownTimer = this.dashCooldown;
     this.dashDirection = this.facing;
     this.dashTrailTimer = 0;
     this.audio.playJump();
@@ -232,7 +277,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     const ghost = this.scene.add.image(this.x, this.y, this.texture.key);
     ghost.setFlipX(this.flipX);
     ghost.setAlpha(0.5);
-    ghost.setTint(0x00f5ff);
+    ghost.setTint(parseInt(this.character.accentColor.replace('#', ''), 16));
     ghost.setDepth(9);
     this.scene.tweens.add({
       targets: ghost,
@@ -246,24 +291,29 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
 
   private updateSprite(isRunning = false): void {
     this.setFlipX(this.facing < 0);
-    const runSuffix = isRunning ? `-run${this.runFrame + 1}` : '';
-    if (this.playerState === PlayerState.Small) {
-      this.setTexture(isRunning ? `player-small${runSuffix}` : 'player-small');
-    } else if (this.playerState === PlayerState.Blaze) {
-      this.setTexture(isRunning ? `player-blaze${runSuffix}` : 'player-blaze');
-    } else {
-      this.setTexture(isRunning ? `player-big${runSuffix}` : 'player-big');
-    }
+    const stateKey =
+      this.playerState === PlayerState.Small
+        ? 'small'
+        : this.playerState === PlayerState.Blaze
+          ? 'blaze'
+          : 'big';
+    this.setTexture(
+      getCharacterTextureKey(this.character.id, stateKey, isRunning, this.runFrame),
+    );
   }
 
   applyStateSize(): void {
     const body = this.body as Phaser.Physics.Arcade.Body;
+    const { stats } = this.character;
+    const hitMult =
+      this.playerState === PlayerState.Small ? stats.smallHitboxMult : stats.poweredHitboxMult;
+
     if (this.playerState === PlayerState.Small) {
-      body.setSize(18, 24);
-      body.setOffset(3, 2);
+      body.setSize(Math.round(18 * hitMult), Math.round(24 * hitMult));
+      body.setOffset(Math.round(3 + (18 - 18 * hitMult) / 2), Math.round(2 + (24 - 24 * hitMult) / 2));
     } else {
-      body.setSize(18, 42);
-      body.setOffset(3, 4);
+      body.setSize(Math.round(18 * hitMult), Math.round(42 * hitMult));
+      body.setOffset(Math.round(3 + (18 - 18 * hitMult) / 2), Math.round(4 + (42 - 42 * hitMult) / 2));
     }
     this.updateSprite();
   }

@@ -37,6 +37,7 @@ export class GameScene extends Phaser.Scene {
   private powerUps: PowerUp[] = [];
   private movingPlatforms: MovingPlatform[] = [];
   private levelIndex = 0;
+  private characterId = Storage.getSelectedCharacter();
   private levelData = LEVELS[0];
   private builtLevel!: ReturnType<typeof LevelBuilder.build>;
   private parallaxClouds!: Phaser.GameObjects.Image;
@@ -54,8 +55,9 @@ export class GameScene extends Phaser.Scene {
     super({ key: 'GameScene' });
   }
 
-  init(data: { levelIndex?: number }): void {
+  init(data: { levelIndex?: number; characterId?: string }): void {
     this.levelIndex = data.levelIndex ?? GameState.currentLevel;
+    this.characterId = data.characterId ?? Storage.getSelectedCharacter();
     this.levelData = LEVELS[this.levelIndex] ?? LEVELS[0];
     this.levelComplete = false;
     this.flagSliding = false;
@@ -98,7 +100,7 @@ export class GameScene extends Phaser.Scene {
     this.movingPlatforms = LevelBuilder.spawnMovingPlatforms(this, this.levelData);
 
     const startPos = Block.worldPos(this.levelData.playerStart.x, this.levelData.playerStart.y);
-    this.player = new Player(this, startPos.x, startPos.y, this.inputManager, this.audio);
+    this.player = new Player(this, startPos.x, startPos.y, this.inputManager, this.audio, this.characterId);
 
     this.physics.add.collider(this.player, this.builtLevel.groundLayer);
     this.physics.add.collider(
@@ -226,7 +228,7 @@ export class GameScene extends Phaser.Scene {
     this.physics.resume();
     GameState.combo = 0;
     GameState.comboTimer = 0;
-    this.scene.restart({ levelIndex: this.levelIndex });
+    this.scene.restart({ levelIndex: this.levelIndex, characterId: this.characterId });
   }
 
   private syncHud(): void {
@@ -235,6 +237,7 @@ export class GameScene extends Phaser.Scene {
       coins: GameState.coins,
       lives: GameState.lives,
       world: this.levelData.name,
+      characterName: this.player.characterName,
       combo: GameState.combo,
       comboMultiplier: GameState.comboMultiplier,
       levelIndex: this.levelIndex,
@@ -521,7 +524,7 @@ export class GameScene extends Phaser.Scene {
         });
         this.scene.stop();
       } else {
-        this.scene.restart({ levelIndex: GameState.currentLevel });
+        this.scene.restart({ levelIndex: GameState.currentLevel, characterId: this.characterId });
       }
     });
   }
@@ -592,7 +595,7 @@ export class GameScene extends Phaser.Scene {
         });
         this.scene.stop();
       } else {
-        this.scene.restart({ levelIndex: this.levelIndex });
+        this.scene.restart({ levelIndex: this.levelIndex, characterId: this.characterId });
       }
     });
   }

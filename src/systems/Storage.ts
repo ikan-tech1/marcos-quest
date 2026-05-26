@@ -1,7 +1,10 @@
+import { DEFAULT_CHARACTER_ID } from '../config/characters';
+
 const HIGH_SCORE_KEY = 'eashans-quest-high-score';
 const COMPLETED_LEVELS_KEY = 'eashans-quest-completed';
 const SOUND_ENABLED_KEY = 'eashans-quest-sound';
 const SECRET_UNLOCKED_KEY = 'eashans-quest-secret';
+const CHARACTER_KEY = 'eashans-quest-character';
 
 export const Storage = {
   getHighScore(): number {
@@ -78,6 +81,22 @@ export const Storage = {
       return localStorage.getItem(SECRET_UNLOCKED_KEY) === 'true';
     } catch {
       return false;
+    }
+  },
+
+  getSelectedCharacter(): string {
+    try {
+      return localStorage.getItem(CHARACTER_KEY) || DEFAULT_CHARACTER_ID;
+    } catch {
+      return DEFAULT_CHARACTER_ID;
+    }
+  },
+
+  setSelectedCharacter(characterId: string): void {
+    try {
+      localStorage.setItem(CHARACTER_KEY, characterId);
+    } catch {
+      /* ignore */
     }
   },
 };

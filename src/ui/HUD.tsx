@@ -4,11 +4,18 @@ import { UISounds } from '../utils/uiSounds';
 interface Props {
   hud: HudState;
   isFullscreen?: boolean;
+  showControls?: boolean;
   onPause?: () => void;
   onToggleFullscreen?: () => void;
 }
 
-export function HUD({ hud, isFullscreen = false, onPause, onToggleFullscreen }: Props) {
+export function HUD({
+  hud,
+  isFullscreen = false,
+  showControls = false,
+  onPause,
+  onToggleFullscreen,
+}: Props) {
   const timeClass = hud.timeLeft <= 100 ? 'hud-time hud-time--warn' : 'hud-time';
 
   return (
@@ -45,33 +52,35 @@ export function HUD({ hud, isFullscreen = false, onPause, onToggleFullscreen }: 
         </div>
       </div>
 
-      <div className="hud-controls">
-        {onToggleFullscreen && (
-          <button
-            type="button"
-            className="hud-icon-btn"
-            onClick={onToggleFullscreen}
-            aria-label={isFullscreen ? 'Exit fullscreen' : 'Enter fullscreen'}
-            title={isFullscreen ? 'Exit fullscreen (F / Esc)' : 'Fullscreen (F)'}
-          >
-            {isFullscreen ? '⤢' : '⛶'}
-          </button>
-        )}
-        {onPause && (
-          <button
-            type="button"
-            className="hud-icon-btn"
-            onClick={() => {
-              UISounds.pause();
-              onPause();
-            }}
-            aria-label="Pause game"
-            title="Pause (Esc / P)"
-          >
-            ⏸
-          </button>
-        )}
-      </div>
+      {showControls && (
+        <div className="hud-controls">
+          {onToggleFullscreen && (
+            <button
+              type="button"
+              className="hud-icon-btn"
+              onClick={onToggleFullscreen}
+              aria-label={isFullscreen ? 'Exit fullscreen' : 'Enter fullscreen'}
+              title={isFullscreen ? 'Exit fullscreen (F / Esc)' : 'Fullscreen (F)'}
+            >
+              {isFullscreen ? '⤢' : '⛶'}
+            </button>
+          )}
+          {onPause && (
+            <button
+              type="button"
+              className="hud-icon-btn"
+              onClick={() => {
+                UISounds.pause();
+                onPause();
+              }}
+              aria-label="Pause game"
+              title="Pause (Esc / P)"
+            >
+              ⏸
+            </button>
+          )}
+        </div>
+      )}
 
       {hud.combo > 1 && (
         <div className="hud-combo" key={hud.combo}>

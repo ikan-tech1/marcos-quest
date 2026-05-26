@@ -17,14 +17,17 @@ import { LoadingOverlay } from './ui/LoadingOverlay';
 import { LevelClearOverlay } from './ui/LevelClearOverlay';
 import { PauseOverlay } from './ui/PauseOverlay';
 import { TouchControls } from './ui/TouchControls';
+import { ArcadeCabinet } from './ui/ArcadeCabinet';
 import { UISounds } from './utils/uiSounds';
 import { useFullscreen } from './hooks/useFullscreen';
+import { computeCabinetLayout, computeGameScale } from './config/cabinetLayout';
 
 const defaultHud: HudState = {
   score: 0,
   coins: 0,
   lives: 3,
   world: '',
+  characterName: 'EASHAN',
   combo: 0,
   comboMultiplier: 1,
   levelIndex: 0,
@@ -32,20 +35,6 @@ const defaultHud: HudState = {
   highScore: Storage.getHighScore(),
   timeLeft: 400,
 };
-
-/** Max integer Phaser zoom — fills viewport, crisp pixels only. */
-function computeGameScale(isFullscreen: boolean): number {
-  const pad = isFullscreen ? 0 : 12;
-  const maxW = window.innerWidth - pad * 2;
-  const maxH = window.innerHeight - pad * 2;
-  return Math.max(
-    1,
-    Math.min(
-      Math.floor(maxW / GAME_WIDTH),
-      Math.floor(maxH / GAME_HEIGHT),
-    ),
-  );
-}
 
 function isTouchDevice(): boolean {
   return 'ontouchstart' in window || window.matchMedia('(pointer: coarse)').matches;
@@ -186,8 +175,10 @@ export function App() {
 
   useEffect(() => {
     const updateScale = () => {
-      setViewport({ w: window.innerWidth, h: window.innerHeight });
-      setGameScale(computeGameScale(isFullscreen));
+      const w = window.innerWidth;
+      const h = window.innerHeight;
+      setViewport({ w, h });
+      setGameScale(computeGameScale(isFullscreen, w, h));
     };
     updateScale();
     window.addEventListener('resize', updateScale);
@@ -227,10 +218,8 @@ export function App() {
     UISounds.click();
   }, [soundEnabled]);
 
-  const scaledW = GAME_WIDTH * gameScale;
-  const scaledH = GAME_HEIGHT * gameScale;
-  const letterboxX = Math.max(0, (viewport.w - scaledW) / 2);
-  const letterboxY = Math.max(0, (viewport.h - scaledH) / 2);
+  const layout = computeCabinetLayout(isFullscreen, viewport.w, viewport.h, gameScale);
+  const { scaledW, scaledH, crtLeft, crtTop } = layout;
 
   const handleToggleFullscreen = useCallback(() => {
     UISounds.click();
@@ -305,7 +294,7 @@ export function App() {
         <div className="ground-dirt" />
       </div>
 
-      {/* Hidden mount — Phaser always needs a parent */}
+      {/* Phaser canvas — fixed at CRT inset (cabinet) or letterbox (fullscreen) */}
       <div
         id="game-container"
         ref={containerRef}
@@ -315,38 +304,36 @@ export function App() {
             ? ({
                 width: scaledW,
                 height: scaledH,
-                left: letterboxX,
-                top: letterboxY,
+                left: crtLeft,
+                top: crtTop,
                 '--game-scale': gameScale,
               } as React.CSSProperties)
             : undefined
         }
       />
 
+      {showGameViewport && !isFullscreen && (
+        <ArcadeCabinet
+          layout={layout}
+          hud={hud}
+          screen={screen}
+          isPlaying={screen === 'playing' || screen === 'level-clear'}
+          onPause={() => GameBridge.emit('pause-game')}
+          onToggleFullscreen={handleToggleFullscreen}
+        />
+      )}
+
       {showGameViewport && (
         <div
-          className={`game-viewport${isFullscreen ? ' game-viewport--fullscreen' : ''}`}
-          style={{
-            width: scaledW,
-            height: scaledH,
-            left: letterboxX,
-            top: letterboxY,
-          }}
+          className={`game-viewport${isFullscreen ? ' game-viewport--fullscreen' : ' game-viewport--cabinet-window'}`}
+          style={{ width: scaledW, height: scaledH, left: crtLeft, top: crtTop }}
         >
-          {!isFullscreen && (
-            <div className="game-viewport-frame" aria-hidden="true">
-              <div className="frame-corner frame-corner--tl" />
-              <div className="frame-corner frame-corner--tr" />
-              <div className="frame-corner frame-corner--bl" />
-              <div className="frame-corner frame-corner--br" />
-              <div className="frame-grass-lip" />
-            </div>
-          )}
-
+          {!isFullscreen && <div className="cabinet-crt-scanlines cabinet-crt-scanlines--overlay" aria-hidden="true" />}
           {(screen === 'playing' || screen === 'level-clear' || screen === 'paused') && (
             <HUD
               hud={hud}
               isFullscreen={isFullscreen}
+              showControls={isFullscreen}
               onPause={() => GameBridge.emit('pause-game')}
               onToggleFullscreen={handleToggleFullscreen}
             />
