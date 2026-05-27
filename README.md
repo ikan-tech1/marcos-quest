@@ -22,13 +22,50 @@ A next-gen Mario-style platformer built with **Phaser 4**, **React**, and **Type
 - **Stomp / fire / star / shell** interactions — full Mario-style combat vocabulary
 - **Level select** — unlock worlds as you progress; replay any unlocked stage; secret Star Chamber when discovered
 
-### Easter Eggs (5+ discoverable secrets)
+### Game Modes (menu selectable)
+- **Adventure** — classic campaign with level select (default)
+- **Speedrun** — prominent timer + ghost best time in localStorage; sequential levels only
+- **Hardcore** — 1 life, no power-up respawn on death
+- **Coin Rush** — 60-second timer; collect max coins in a random level
+- **Boss Rush** — jump straight to the Iron Guard boss level
+
+### Missions & Side Quests
+- **Mission board** on title menu and pause menu — 3 active missions at a time
+- Examples: stomp 5 enemies without damage, collect 20 coins in one level, clear with 200+ seconds left, defeat boss without fire
+- Progress tracked in-game; rewards: bonus score, cosmetics, secret unlocks
+- **Side quest ? signs** in levels — walk near and press **E** for mini objective popups
+- Mission complete fanfare + coin shower VFX
+
+### Daily Challenge
+- Seed based on today's date — deterministic modifier (Low Gravity, Double Enemies, Fog, Turbo Rush, Coin Frenzy, Icy Slopes)
+- One challenge per day; streak counter in localStorage
+- **Daily Challenge** card on title menu with date, modifier, and reward
+
+### Kingdom Shop
+- Appears between worlds in Adventure mode
+- Spend banked coins on: extra life (30), power-up stash (25), hint scroll (15)
+
+### Checkpoints
+- Green flag checkpoints mid-level — touch to save respawn point
+
+### Easter Eggs (15+ discoverable secrets)
 - Konami code on title screen → +3 lives
 - Hidden dev message near World 1-1 secret block
 - Secret underground pipe warp in World 2-1 → unlocks Star Chamber
+- **Hidden chamber in World 2-1** — press ↓ at tile 32 for bonus room
 - Flag-pole top bonus (+5000) when you reach the top
 - Hidden 1-Up in invisible blocks
 - Score Master toast at 10,000 points
+- Spring Obsessed — bounce 5 springs in one level
+- Sky Walker — triple jump high on World 1-2
+- Flag Dash — dash near the flag pole
+- Sign Reader — talk to multiple ? signs
+- **Cheat codes** in pause Settings: QUEST, COINS, STAR (and more to find)
+- **Nova** — 5th hero unlocked after completing all missions
+
+### Achievements
+- 12 badges (some secret) — first stomp, 100 coins, combos, daily streak, boss slayer, and more
+- Pop-up toasts on unlock; grid view in menu and pause
 
 ### Frontend
 - **Full-viewport immersive shell (default)** — game scales to max integer Phaser zoom (crisp pixels, no CSS canvas scale); cinematic sky letterboxing on ultrawide/tall screens
@@ -38,7 +75,11 @@ A next-gen Mario-style platformer built with **Phaser 4**, **React**, and **Type
 - **Screen transitions** — fade/scale between loading, menu, gameplay, pause, level clear, and game over
 - **UI sound cues** — click/confirm/cancel tones on menu and pause interactions
 - **React UI overlay** — menu, HUD (score, coins, lives, timer, world), pause, level clear, game over
-- **Pause menu** — resume, restart, sound toggle, quit (Esc / P)
+- **Pause menu tabs** — Resume | Missions | Achievements | Settings (cheat codes + secrets log)
+- **Game mode selector** + daily challenge card on title menu
+- **Mission tracker** compact HUD widget during play
+- **Mode badge** on HUD showing current mode
+- **Flashy combo meter** with pulse ring animation
 - **High score** — persisted in localStorage with new-record celebration
 - **Mobile touch controls** — on-screen D-pad, jump, dash, and fire styled to match the kingdom aesthetic
 - **Crisp pixel rendering** — Phaser `scale.setZoom()` integer scaling only
@@ -56,7 +97,8 @@ A next-gen Mario-style platformer built with **Phaser 4**, **React**, and **Type
 | ↓ / S (on pipe) | Enter warp pipe |
 | Shift / K | Dash |
 | Z / J | Fire (with Blaze power) |
-| Esc / P | Pause |
+| Esc / P | Pause (tabbed menu) |
+| E | Talk to ? side-quest signs |
 | Enter / Click | Start / confirm |
 
 On mobile, use the on-screen touch buttons.
@@ -153,6 +195,7 @@ src/
 ├── entities/            # Player, Enemy, MovingPlatform, Projectile
 ├── objects/             # Block, Coin, PowerUp, Pipe
 ├── systems/             # Input, Audio, GameState, EasterEggs, Storage, GameBridge
+│                        # gameModes, missions, dailyChallenge, achievements
 ├── levels/              # Level data + builder
 └── styles/global.css    # Platformer world + UI design system
 ```

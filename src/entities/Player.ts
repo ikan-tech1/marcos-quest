@@ -415,6 +415,35 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     });
   }
 
+  revive(state: 'small' | 'big' | 'blaze'): void {
+    this.isDead = false;
+    this.alpha = 1;
+    this.invincibleTimer = INVINCIBLE_FLASH_MS;
+    if (state === 'blaze') {
+      this.playerState = PlayerState.Blaze;
+      this.fireEnabled = true;
+    } else if (state === 'big') {
+      this.playerState = PlayerState.Big;
+      this.fireEnabled = false;
+    } else {
+      this.playerState = PlayerState.Small;
+      this.fireEnabled = false;
+    }
+    this.starTimer = 0;
+    this.maxJumps = 2;
+    this.jumpsRemaining = 2;
+    this.applyStateSize();
+    this.setVelocity(0, 0);
+  }
+
+  get hasTripleJump(): boolean {
+    return this.maxJumps >= 3;
+  }
+
+  get airJumpsUsed(): number {
+    return this.maxJumps - this.jumpsRemaining;
+  }
+
   reset(x: number, y: number): void {
     this.isDead = false;
     this.setPosition(x, y);

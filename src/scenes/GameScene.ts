@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import {
   GAME_HEIGHT,
+  GAME_WIDTH,
   GRAVITY,
   PlayerState,
   PowerUpType,
@@ -22,9 +23,26 @@ import { GameState } from '../systems/GameState';
 import { GameBridge } from '../systems/GameBridge';
 import { Storage } from '../systems/Storage';
 import { EasterEggs } from '../systems/EasterEggs';
+import { Missions } from '../systems/missions';
+import { Achievements } from '../systems/achievements';
+import {
+  getTodayChallenge,
+  getModifierGravityMult,
+  isDailyCompleted,
+  markDailyCompleted,
+  type DailyModifier,
+} from '../systems/dailyChallenge';
+import {
+  getGameModeRules,
+  getBossRushLevelIndices,
+  getCoinRushLevelIndex,
+  type GameModeId,
+} from '../systems/gameModes';
 import { LEVELS } from '../levels/levelData';
 import { LevelBuilder } from '../levels/LevelBuilder';
-import { screenShake, spawnDebris, spawnSparkle, freezeFrame, spawnComboText, spawnPipeWarp, spawnSpringBurst, spawnFireImpact, squashStretch } from '../utils/effects';
+import { Checkpoint } from '../objects/Checkpoint';
+import { QuestSign } from '../objects/QuestSign';
+import { screenShake, spawnDebris, spawnSparkle, freezeFrame, spawnComboText, spawnPipeWarp, spawnSpringBurst, spawnFireImpact, squashStretch, spawnCoinShower } from '../utils/effects';
 import { texturesReady } from '../utils/textureLifecycle';
 
 export class GameScene extends Phaser.Scene {
@@ -55,19 +73,51 @@ export class GameScene extends Phaser.Scene {
   private cabinetBonusUsed = false;
   private secretMessage?: Phaser.GameObjects.Text;
   private pipeWarping = false;
+  private checkpoints: Checkpoint[] = [];
+  private questSigns: QuestSign[] = [];
+  private dailyModifier?: DailyModifier;
+  private hiddenRoomEntered = false;
+  private sideQuestPopup?: Phaser.GameObjects.Text;
+  private prevDashPressed = false;
 
   constructor() {
     super({ key: 'GameScene' });
   }
 
-  init(data: { levelIndex?: number; characterId?: string }): void {
-    this.levelIndex = data.levelIndex ?? GameState.currentLevel;
+  init(data: {
+    levelIndex?: number;
+    characterId?: string;
+    gameMode?: GameModeId;
+    dailyChallenge?: boolean;
+  }): void {
+    if (data.gameMode) {
+      GameState.gameMode = data.gameMode;
+      Storage.setGameMode(data.gameMode);
+    } else {
+      GameState.gameMode = Storage.getGameMode();
+    }
+    GameState.isDailyChallenge = data.dailyChallenge ?? false;
+
+    const rules = getGameModeRules(GameState.gameMode);
+    if (GameState.gameMode === 'bossRush') {
+      this.levelIndex = getBossRushLevelIndices()[0] ?? 7;
+    } else if (GameState.gameMode === 'coinRush') {
+      this.levelIndex = getCoinRushLevelIndex(Date.now());
+      GameState.coinRushTimeLeft = rules.coinRushDuration;
+    } else if (GameState.isDailyChallenge) {
+      this.levelIndex = getTodayChallenge().levelIndex;
+      this.dailyModifier = getTodayChallenge().modifier;
+    } else {
+      this.levelIndex = data.levelIndex ?? GameState.currentLevel;
+    }
+
     this.characterId = data.characterId ?? Storage.getSelectedCharacter();
     this.levelData = LEVELS[this.levelIndex] ?? LEVELS[0];
     this.levelComplete = false;
     this.flagSliding = false;
     this.paused = false;
     this.pipeWarping = false;
+    this.hiddenRoomEntered = false;
     this.enemies = [];
     this.coins = [];
     this.blocks = [];
@@ -75,9 +125,27 @@ export class GameScene extends Phaser.Scene {
     this.projectiles = [];
     this.powerUps = [];
     this.movingPlatforms = [];
+    this.checkpoints = [];
+    this.questSigns = [];
     this.cameraLookAhead = 0;
     this.cabinetBonusUsed = false;
-    GameState.resetTimer(this.levelData.timeLimit ?? undefined);
+    this.prevDashPressed = false;
+    this.dailyModifier = GameState.isDailyChallenge ? getTodayChallenge().modifier : this.dailyModifier;
+
+    Missions.resetLevelTracking();
+    EasterEggs.resetLevelTracking();
+    GameState.clearCheckpoint();
+    GameState.levelDamageTaken = false;
+    GameState.dashCount = 0;
+
+    if (rules.coinRushDuration > 0 && GameState.gameMode === 'coinRush') {
+      GameState.resetTimer(rules.coinRushDuration);
+    } else {
+      GameState.resetTimer(this.levelData.timeLimit ?? undefined);
+    }
+    if (rules.showSpeedrunTimer && GameState.speedrunStartMs === 0) {
+      GameState.startSpeedrunTimer();
+    }
   }
 
   create(): void {
@@ -131,9 +199,25 @@ export class GameScene extends Phaser.Scene {
     this.enemies.forEach((e) => e.setGroundLayer(this.builtLevel.groundLayer));
     this.coins = LevelBuilder.spawnCoins(this, this.levelData);
     this.movingPlatforms = LevelBuilder.spawnMovingPlatforms(this, this.levelData);
+    this.checkpoints = LevelBuilder.spawnCheckpoints(this, this.levelData);
+    this.questSigns = LevelBuilder.spawnQuestSigns(this, this.levelData);
 
     const startPos = Block.worldPos(this.levelData.playerStart.x, this.levelData.playerStart.y);
     this.player = new Player(this, startPos.x, startPos.y, this.inputManager, this.audio, this.characterId);
+
+    if (this.levelData.hiddenRoom) {
+      this.levelData.hiddenRoom.bonusCoins.forEach((c) => {
+        const { x, y } = Block.worldPos(c.x, c.y);
+        const coin = new Coin(this, x, y);
+        this.coins.push(coin);
+      });
+    }
+
+    this.applyDailyModifiers();
+
+    this.checkpoints.forEach((cp) => {
+      this.physics.add.overlap(this.player, cp.getZone(), () => cp.activate(this.audio));
+    });
 
     this.physics.add.collider(this.player, this.builtLevel.groundLayer);
     this.physics.add.collider(
@@ -159,6 +243,10 @@ export class GameScene extends Phaser.Scene {
     this.physics.add.overlap(this.player, this.coins, (_p, c) => {
       const gotLife = (c as Coin).collect(this.audio);
       if (gotLife) this.audio.playOneUp();
+      Missions.onCoinCollected();
+      if (Storage.getTotalCoinsCollected() >= 100 && Achievements.unlock('coins-100')) {
+        this.emitAchievement('coins-100', 'Centurion', '🪙');
+      }
     });
 
     this.physics.add.overlap(this.player, this.powerUps, (_p, pu) => {
@@ -263,6 +351,58 @@ export class GameScene extends Phaser.Scene {
     this.events.on('cabinet-bonus-score', () => this.applyCabinetBonus());
   }
 
+  private applyDailyModifiers(): void {
+    const mod = this.dailyModifier ?? (GameState.isDailyChallenge ? getTodayChallenge().modifier : undefined);
+    if (!mod) return;
+
+    if (mod === 'low_gravity') {
+      this.physics.world.gravity.y = GRAVITY * getModifierGravityMult(mod);
+    }
+    if (mod === 'double_enemies') {
+      const extras = LevelBuilder.spawnEnemies(this, this.levelData);
+      extras.forEach((e) => {
+        e.setPosition(e.x + Phaser.Math.Between(-20, 20), e.y);
+        e.setGroundLayer(this.builtLevel.groundLayer);
+        this.enemies.push(e);
+        this.physics.add.collider(e, this.builtLevel.groundLayer);
+        this.physics.add.collider(e, this.movingPlatforms);
+        this.physics.add.overlap(this.player, e, (_p, enemy) => {
+          if (this.flagSliding) return;
+          this.handleEnemyCollision(enemy as Enemy);
+        });
+      });
+    }
+    if (mod === 'fog') {
+      this.add
+        .rectangle(0, 0, GAME_WIDTH * 3, GAME_HEIGHT * 2, 0x000000, 0.45)
+        .setScrollFactor(0)
+        .setDepth(90)
+        .setOrigin(0);
+    }
+    if (mod === 'coin_frenzy') {
+      this.levelData.coins.slice(0, 6).forEach((c) => {
+        const { x, y } = Block.worldPos(c.x + 1, c.y);
+        const coin = new Coin(this, x, y);
+        this.coins.push(coin);
+        this.physics.add.overlap(this.player, coin, () => {
+          coin.collect(this.audio);
+          Missions.onCoinCollected();
+        });
+      });
+    }
+  }
+
+  private emitAchievement(id: string, title: string, icon: string): void {
+    GameBridge.emit('achievement-unlock', { id, title, icon });
+  }
+
+  private emitMissionComplete(title: string, rewardScore: number): void {
+    GameState.addScore(rewardScore);
+    spawnCoinShower(this, this.player.x, this.player.y - 40);
+    this.audio.playWin();
+    GameBridge.emit('mission-complete', { title, rewardScore });
+  }
+
   private applyThemeBackground(): void {
     const theme = this.levelData.theme;
     const skyColor =
@@ -331,6 +471,8 @@ export class GameScene extends Phaser.Scene {
   }
 
   private syncHud(): void {
+    const rules = getGameModeRules(GameState.gameMode);
+    GameState.tickSpeedrun();
     GameBridge.updateHud({
       score: GameState.score,
       coins: GameState.coins,
@@ -345,6 +487,12 @@ export class GameScene extends Phaser.Scene {
       timeLeft: Math.ceil(GameState.timeLeft),
       levelBonus: GameState.lastLevelBonus || undefined,
       canFire: this.player?.canFire ?? false,
+      gameMode: GameState.gameMode,
+      speedrunElapsed: rules.showSpeedrunTimer ? Math.floor(GameState.speedrunElapsedMs / 1000) : undefined,
+      speedrunGhost: rules.trackSpeedrunGhost ? Math.floor(Storage.getSpeedrunGhost() / 1000) : undefined,
+      coinRushTime: rules.showCoinRushTimer ? Math.ceil(GameState.timeLeft) : undefined,
+      missions: Missions.getActiveMissions(),
+      checkpointActive: GameState.hasCheckpoint,
     });
   }
 
@@ -381,6 +529,13 @@ export class GameScene extends Phaser.Scene {
     this.coins.forEach((c) => c.updateSpin(delta));
 
     GameState.updateCombo(delta);
+    Missions.onComboUpdate(GameState.combo);
+
+    if (this.inputManager.dashPressed && !this.prevDashPressed) {
+      GameState.dashCount += 1;
+      Missions.onDash();
+    }
+    this.prevDashPressed = this.inputManager.dashPressed;
 
     if (GameState.tickTimer(delta)) {
       this.player.die();
@@ -398,6 +553,8 @@ export class GameScene extends Phaser.Scene {
     this.checkGoal();
     this.checkPitDeath();
     this.checkEasterEggs();
+    this.checkQuestSigns();
+    this.checkHiddenRoom();
     this.updateCamera();
     this.syncHud();
 
@@ -432,6 +589,10 @@ export class GameScene extends Phaser.Scene {
         spawnSpringBurst(this, block.x, block.y);
         screenShake(this, 4, 100);
         squashStretch(this.player, 0.75, 1.25, 120);
+        if (EasterEggs.onSpringBounce()) {
+          this.showSecretToast('Spring obsessed!');
+          this.audio.playSecret();
+        }
         continue;
       }
 
@@ -504,6 +665,9 @@ export class GameScene extends Phaser.Scene {
   }
 
   private handleEnemyCollision(enemy: Enemy): void {
+    if (enemy.enemyType === 'boss') {
+      Missions.onBossEncounter();
+    }
     const result = enemy.handlePlayerCollision(this.player);
     if (result === 'stomp') {
       enemy.stomp();
@@ -513,12 +677,21 @@ export class GameScene extends Phaser.Scene {
       freezeFrame(this, 50);
       const prevCombo = GameState.combo;
       GameState.addStomp();
+      Missions.onStomp();
+      if (GameState.levelStomps === 1 && Achievements.unlock('first-stomp')) {
+        this.emitAchievement('first-stomp', 'First Stomp', '👟');
+      }
+      if (GameState.combo >= 5 && Achievements.unlock('combo-5')) {
+        this.emitAchievement('combo-5', 'Combo Starter', '🔥');
+      }
       if (GameState.combo > prevCombo && GameState.combo > 1) {
         spawnComboText(this, this.player.x, this.player.y, GameState.combo, GameState.comboMultiplier);
       }
     } else if (result === 'hurt') {
       const damaged = this.player.takeDamage();
       if (!damaged) {
+        GameState.levelDamageTaken = true;
+        Missions.onDamage();
         screenShake(this, 6, 150);
         const pb = this.player.body as Phaser.Physics.Arcade.Body;
         pb.setVelocityX(enemy.x < this.player.x ? 200 : -200);
@@ -527,6 +700,7 @@ export class GameScene extends Phaser.Scene {
   }
 
   private fireProjectile(): void {
+    Missions.onFireUsed();
     const dir = this.player.flipX ? -1 : 1;
     const proj = new Projectile(this, this.player.x + dir * 16, this.player.y, dir);
     this.projectiles.push(proj);
@@ -583,6 +757,75 @@ export class GameScene extends Phaser.Scene {
             }
           },
         });
+      },
+    });
+  }
+
+  private checkQuestSigns(): void {
+    let nearSign: QuestSign | undefined;
+    for (const sign of this.questSigns) {
+      const dist = Phaser.Math.Distance.Between(this.player.x, this.player.y, sign.x, sign.y);
+      sign.showPrompt(dist < TILE_SIZE * 1.5);
+      if (dist < TILE_SIZE * 1.5) nearSign = sign;
+    }
+
+    if (nearSign && this.inputManager.interactPressed) {
+      const { message, reward, id } = nearSign.config;
+      GameState.addScore(reward);
+      if (EasterEggs.onSignTalk(id)) {
+        this.showSecretToast('Sign reader!');
+      }
+      this.sideQuestPopup?.destroy();
+      this.sideQuestPopup = this.add.text(this.player.x, this.player.y - 70, message, {
+        fontSize: '12px',
+        color: '#fff8dc',
+        backgroundColor: '#5d4037dd',
+        padding: { x: 10, y: 6 },
+        wordWrap: { width: 220 },
+        align: 'center',
+      }).setOrigin(0.5).setDepth(100);
+      this.time.delayedCall(3500, () => this.sideQuestPopup?.destroy());
+      this.audio.playSecret();
+      nearSign.talked = true;
+    }
+  }
+
+  private checkHiddenRoom(): void {
+    const room = this.levelData.hiddenRoom;
+    if (!room || this.pipeWarping || this.hiddenRoomEntered) return;
+    const body = this.player.body as Phaser.Physics.Arcade.Body;
+    const entry = Block.worldPos(room.entryX, room.entryY);
+    const movingDown = this.inputManager.down && body.blocked.down;
+    if (
+      movingDown &&
+      Math.abs(this.player.x - entry.x) < TILE_SIZE &&
+      Math.abs(this.player.y - entry.y) < TILE_SIZE * 1.5
+    ) {
+      this.warpToHiddenRoom(room.exitX, room.exitY);
+    }
+  }
+
+  private warpToHiddenRoom(exitX: number, exitY: number): void {
+    this.pipeWarping = true;
+    this.audio.playPipe();
+    spawnPipeWarp(this, this.player.x, this.player.y);
+    this.tweens.add({
+      targets: this.player,
+      alpha: 0,
+      duration: 250,
+      onComplete: () => {
+        const exit = Block.worldPos(exitX, exitY);
+        this.player.setPosition(exit.x, exit.y);
+        this.player.setAlpha(1);
+        this.hiddenRoomEntered = true;
+        this.pipeWarping = false;
+        if (EasterEggs.unlock('hidden-room-2-1')) {
+          this.showSecretToast('Hidden chamber found!');
+          Achievements.unlock('secret-room');
+          this.emitAchievement('secret-room', 'Hidden Explorer', '🚪');
+          this.audio.playSecret();
+        }
+        spawnCoinShower(this, exit.x, exit.y);
       },
     });
   }
@@ -737,28 +980,116 @@ export class GameScene extends Phaser.Scene {
 
   private finishLevel(): void {
     this.flagSliding = false;
+    Missions.onLevelClear(GameState.timeLeft);
+
+    const completedMissions = Missions.consumeCompleted();
+    completedMissions.forEach((m) => {
+      this.emitMissionComplete(m.def.title, m.def.rewardScore);
+    });
+
+    if (!GameState.levelDamageTaken && Achievements.unlock('no-damage-level')) {
+      this.emitAchievement('no-damage-level', 'Untouchable', '🛡');
+    }
+
+    if (GameState.isDailyChallenge && !isDailyCompleted()) {
+      const { streak, reward } = markDailyCompleted();
+      GameState.addScore(reward);
+      this.showSecretToast(`Daily complete! Streak: ${streak} (+${reward})`);
+      if (streak >= 7 && Achievements.unlock('daily-7')) {
+        this.emitAchievement('daily-7', 'Week Warrior', '📅');
+      }
+    }
+
+    const rules = getGameModeRules(GameState.gameMode);
+    if (rules.trackSpeedrunGhost) {
+      const elapsed = GameState.finishSpeedrun();
+      const ghost = Storage.getSpeedrunGhost();
+      if (ghost === 0 || elapsed < ghost) {
+        Storage.setSpeedrunGhost(elapsed);
+        if (Storage.setSpeedrunBest(elapsed)) {
+          this.showSecretToast('New speedrun best!');
+          if (ghost > 0 && Achievements.unlock('speedrun-ghost')) {
+            this.emitAchievement('speedrun-ghost', 'Ghost Buster', '👻');
+          }
+        }
+      }
+    }
+
+    if (Missions.allMissionsComplete()) {
+      Storage.unlockNova();
+      EasterEggs.unlock('nova-unlock');
+      if (Achievements.unlock('nova-unlock')) {
+        this.emitAchievement('nova-unlock', 'Nova Rising', '✨');
+      }
+    }
+
+    if (Achievements.unlock('world-clear') && this.levelIndex === 0) {
+      this.emitAchievement('world-clear', 'World Traveler', '🌍');
+    }
+
     this.audio.playWin();
     this.physics.pause();
     GameBridge.setScreen('level-clear');
 
     this.time.delayedCall(2500, () => {
-      GameState.nextLevel();
-      const playableCount = LEVELS.filter((l) => !l.secret).length;
-      if (GameState.currentLevel >= playableCount) {
-        const { highScore, isNewRecord } = GameState.recordHighScore();
-        this.audio.stopMusic();
-        GameBridge.setScreen('game-over', {
-          won: true,
-          score: GameState.score,
-          highScore,
-          isNewRecord,
+      const showShop =
+        GameState.gameMode === 'adventure' &&
+        !GameState.isDailyChallenge &&
+        (this.levelIndex + 1) % 2 === 0 &&
+        this.levelIndex < LEVELS.filter((l) => !l.secret).length - 1;
+
+      if (showShop) {
+        GameBridge.setScreen('shop', {
+          shopCoins: Storage.getShopCoins(),
+          nextLevelIndex: this.levelIndex + 1,
+          characterId: this.characterId,
         });
-        this.scene.stop();
-      } else {
-        this.physics.resume();
-        this.scene.restart({ levelIndex: GameState.currentLevel, characterId: this.characterId });
+        return;
       }
+
+      this.advanceAfterLevel();
     });
+  }
+
+  private advanceAfterLevel(): void {
+    GameState.nextLevel();
+    const playableCount = LEVELS.filter((l) => !l.secret).length;
+
+    if (GameState.gameMode === 'bossRush') {
+      const { highScore, isNewRecord } = GameState.recordHighScore();
+      this.audio.stopMusic();
+      GameBridge.setScreen('game-over', { won: true, score: GameState.score, highScore, isNewRecord });
+      this.scene.stop();
+      return;
+    }
+
+    if (GameState.gameMode === 'coinRush') {
+      const { highScore, isNewRecord } = GameState.recordHighScore();
+      this.audio.stopMusic();
+      GameBridge.setScreen('game-over', {
+        won: true,
+        score: GameState.score,
+        highScore,
+        isNewRecord,
+      });
+      this.scene.stop();
+      return;
+    }
+
+    if (GameState.currentLevel >= playableCount) {
+      const { highScore, isNewRecord } = GameState.recordHighScore();
+      this.audio.stopMusic();
+      GameBridge.setScreen('game-over', {
+        won: true,
+        score: GameState.score,
+        highScore,
+        isNewRecord,
+      });
+      this.scene.stop();
+    } else {
+      this.physics.resume();
+      this.scene.restart({ levelIndex: GameState.currentLevel, characterId: this.characterId });
+    }
   }
 
   private checkPitDeath(): void {
@@ -799,6 +1130,26 @@ export class GameScene extends Phaser.Scene {
     if (GameState.score >= 10000 && EasterEggs.unlock('score-10k')) {
       this.showSecretToast('Score master!');
     }
+
+    if (
+      this.levelData.name === 'World 1-2' &&
+      this.player.hasTripleJump &&
+      this.player.y < this.builtLevel.height * TILE_SIZE * 0.45 &&
+      EasterEggs.unlock('triple-jump-cliff')
+    ) {
+      this.showSecretToast('Sky walker!');
+      this.audio.playSecret();
+    }
+
+    const body = this.player.body as Phaser.Physics.Arcade.Body;
+    if (
+      this.inputManager.dashPressed &&
+      body.velocity.x !== 0 &&
+      this.player.x >= this.flagpole.bounds.poleX - TILE_SIZE * 4 &&
+      EasterEggs.unlock('flag-dash')
+    ) {
+      this.showSecretToast('Flag dash!');
+    }
   }
 
   private showSecretToast(msg: string): void {
@@ -814,7 +1165,25 @@ export class GameScene extends Phaser.Scene {
   }
 
   private handlePlayerDeath(): void {
+    const rules = getGameModeRules(GameState.gameMode);
+    if (!rules.respawnPowerUp) {
+      GameState.savedPowerState = 'small';
+    } else {
+      GameState.savedPowerState = this.player.playerState as 'small' | 'big' | 'blaze';
+    }
+
     this.time.delayedCall(1000, () => {
+      if (GameState.hasCheckpoint && rules.respawnPowerUp) {
+        GameState.lives = Math.max(0, GameState.lives);
+        this.paused = false;
+        this.physics.resume();
+        this.player.setPosition(GameState.checkpointX, GameState.checkpointY);
+        this.player.revive(GameState.savedPowerState);
+        GameState.clearCheckpoint();
+        this.syncHud();
+        return;
+      }
+
       const gameOver = GameState.loseLife();
       if (gameOver) {
         const { highScore, isNewRecord } = GameState.recordHighScore();
@@ -829,6 +1198,9 @@ export class GameScene extends Phaser.Scene {
       } else {
         this.paused = false;
         this.physics.resume();
+        if (!rules.respawnPowerUp) {
+          GameState.savedPowerState = 'small';
+        }
         this.scene.restart({ levelIndex: this.levelIndex, characterId: this.characterId });
       }
     });

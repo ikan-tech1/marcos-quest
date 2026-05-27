@@ -74,6 +74,20 @@ export const CHARACTERS: CharacterDefinition[] = [
       smallHitboxMult: 0.88,
     },
   },
+  {
+    id: 'nova',
+    name: 'Nova',
+    tagline: 'Star Seeker',
+    trait: 'Unlock: complete all missions · star dash',
+    accentColor: '#00d2ff',
+    stats: {
+      speedMult: 1.05,
+      jumpMult: 1.08,
+      dashCooldownMult: 0.85,
+      poweredHitboxMult: 1,
+      smallHitboxMult: 0.92,
+    },
+  },
 ];
 
 export const DEFAULT_CHARACTER_ID = 'eashan';

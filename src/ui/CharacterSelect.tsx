@@ -61,17 +61,19 @@ export function CharacterSelect({ selectedId, onSelect, compact = false }: Props
       <div className="character-select-grid">
         {CHARACTERS.map((character) => {
           const isActive = character.id === selected;
+          const locked = character.id === 'nova' && !Storage.isNovaUnlocked();
           return (
             <button
               key={character.id}
               type="button"
-              className={`character-card${isActive ? ' character-card--active' : ''}`}
-              onClick={() => pick(character.id)}
+              className={`character-card${isActive ? ' character-card--active' : ''}${locked ? ' character-card--locked' : ''}`}
+              onClick={() => !locked && pick(character.id)}
+              disabled={locked}
               aria-pressed={isActive}
-              title={character.trait}
+              title={locked ? 'Complete all missions to unlock' : character.trait}
             >
               <CharacterPreview character={character} active={isActive} />
-              <span className="character-card-name">{character.name}</span>
+              <span className="character-card-name">{locked ? '???' : character.name}</span>
             </button>
           );
         })}

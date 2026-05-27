@@ -14,6 +14,27 @@ export interface LevelCoin {
   y: number;
 }
 
+export interface LevelCheckpoint {
+  x: number;
+  y: number;
+}
+
+export interface LevelSideQuest {
+  x: number;
+  y: number;
+  id: string;
+  message: string;
+  reward: number;
+}
+
+export interface HiddenRoomConfig {
+  entryX: number;
+  entryY: number;
+  exitX: number;
+  exitY: number;
+  bonusCoins: LevelCoin[];
+}
+
 export interface LevelBlockContent {
   tileX: number;
   tileY: number;
@@ -36,6 +57,9 @@ export interface LevelData {
   timeLimit?: number;
   secret?: boolean;
   devMessageTile?: { x: number; y: number };
+  checkpoints?: LevelCheckpoint[];
+  sideQuests?: LevelSideQuest[];
+  hiddenRoom?: HiddenRoomConfig;
 }
 
 const CHAR_MAP: Record<string, TileType> = {
@@ -109,6 +133,10 @@ export const LEVELS: LevelData[] = [
       { tileX: 38, tileY: 10, contents: 'coin' },
     ],
     movingPlatforms: [{ tileX: 30, tileY: 9, width: 3, range: 80, speed: 1.2, axis: 'x' }],
+    checkpoints: [{ x: 35, y: 12 }],
+    sideQuests: [
+      { x: 15, y: 12, id: 'w1-sign-a', message: 'Stomp enemies from above for combos!', reward: 500 },
+    ],
   },
   {
     name: 'World 1-2',
@@ -154,6 +182,10 @@ export const LEVELS: LevelData[] = [
       { tileX: 62, tileY: 8, width: 2, range: 50, speed: 2, axis: 'y' },
     ],
     pipes: [{ entryX: 38, entryY: 12, exitX: 55, exitY: 8 }],
+    checkpoints: [{ x: 50, y: 12 }],
+    sideQuests: [
+      { x: 28, y: 12, id: 'w12-cliff', message: 'Jump off the far cliff with triple jump active!', reward: 1000 },
+    ],
   },
   {
     name: 'World 1-3',
@@ -294,6 +326,21 @@ export const LEVELS: LevelData[] = [
     pipes: [
       { entryX: 6, entryY: 12, exitX: 48, exitY: 10, secret: true },
     ],
+    hiddenRoom: {
+      entryX: 32,
+      entryY: 12,
+      exitX: 58,
+      exitY: 10,
+      bonusCoins: [
+        { x: 56, y: 8 }, { x: 57, y: 7 }, { x: 58, y: 6 },
+        { x: 59, y: 7 }, { x: 60, y: 8 }, { x: 61, y: 9 },
+      ],
+    },
+    checkpoints: [{ x: 25, y: 12 }, { x: 45, y: 12 }],
+    sideQuests: [
+      { x: 12, y: 12, id: 'w21-sign-a', message: 'Press ↓ on the ? sign near tile 32 for a hidden chamber!', reward: 1500 },
+      { x: 40, y: 12, id: 'w21-sign-b', message: 'Coin blocks above hold Spark power!', reward: 800 },
+    ],
     movingPlatforms: [{ tileX: 22, tileY: 9, width: 2, range: 60, speed: 1.5, axis: 'x' }],
   },
   {
@@ -336,6 +383,10 @@ export const LEVELS: LevelData[] = [
       { tileX: 14, tileY: 9, width: 2, range: 80, speed: 1.2, axis: 'x' },
       { tileX: 28, tileY: 7, width: 3, range: 100, speed: 1, axis: 'x' },
       { tileX: 44, tileY: 8, width: 2, range: 70, speed: 1.8, axis: 'y' },
+    ],
+    checkpoints: [{ x: 40, y: 12 }],
+    sideQuests: [
+      { x: 22, y: 12, id: 'w12-sign', message: 'Triple jump at the cliff edge for a surprise!', reward: 1000 },
     ],
   },
   {
@@ -380,6 +431,10 @@ export const LEVELS: LevelData[] = [
       { tileX: 18, tileY: 9, width: 2, range: 55, speed: 2, axis: 'x' },
       { tileX: 36, tileY: 7, width: 2, range: 65, speed: 1.8, axis: 'y' },
       { tileX: 52, tileY: 9, width: 3, range: 80, speed: 1.4, axis: 'x' },
+    ],
+    checkpoints: [{ x: 30, y: 12 }],
+    sideQuests: [
+      { x: 18, y: 12, id: 'w31-sign', message: 'Piranha plants emerge from pipes — time your jumps!', reward: 600 },
     ],
   },
   {

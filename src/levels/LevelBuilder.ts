@@ -6,6 +6,8 @@ import { Pipe } from '../objects/Pipe';
 import { MovingPlatform } from '../entities/MovingPlatform';
 import { Enemy } from '../entities/Enemy';
 import { Flagpole } from '../objects/Flagpole';
+import { Checkpoint } from '../objects/Checkpoint';
+import { QuestSign } from '../objects/QuestSign';
 import type { LevelData } from './levelData';
 import { parseLevelMap, themeGroundTexture } from './levelData';
 
@@ -125,5 +127,13 @@ export class LevelBuilder {
   static spawnMovingPlatforms(scene: Phaser.Scene, level: LevelData): MovingPlatform[] {
     if (!level.movingPlatforms) return [];
     return level.movingPlatforms.map((config) => new MovingPlatform(scene, config));
+  }
+
+  static spawnCheckpoints(scene: Phaser.Scene, level: LevelData): Checkpoint[] {
+    return (level.checkpoints ?? []).map((cp) => new Checkpoint(scene, cp.x, cp.y));
+  }
+
+  static spawnQuestSigns(scene: Phaser.Scene, level: LevelData): QuestSign[] {
+    return (level.sideQuests ?? []).map((sq) => new QuestSign(scene, sq));
   }
 }

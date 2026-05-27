@@ -7,6 +7,11 @@ import { UISounds } from '../utils/uiSounds';
 import { CharacterSelect } from './CharacterSelect';
 import { getCharacterById } from '../config/characters';
 import type { ViewMode } from '../systems/Storage';
+import type { GameModeId } from '../systems/gameModes';
+import { GAME_MODES, getGameModeById } from '../systems/gameModes';
+import { getTodayChallenge, getDailyStreak, isDailyCompleted } from '../systems/dailyChallenge';
+import { MissionBoard } from './MissionBoard';
+import { AchievementsGrid } from './AchievementsGrid';
 
 interface Props {
   highScore: number;
@@ -29,8 +34,14 @@ export function MenuOverlay({
 }: Props) {
   const [konamiMsg, setKonamiMsg] = useState('');
   const [characterId, setCharacterId] = useState(Storage.getSelectedCharacter());
+  const [gameMode, setGameMode] = useState<GameModeId>(Storage.getGameMode());
+  const [menuSection, setMenuSection] = useState<'play' | 'missions' | 'achievements'>('play');
   const secretUnlocked = EasterEggs.isSecretLevelUnlocked();
   const hero = getCharacterById(characterId);
+  const daily = getTodayChallenge();
+  const dailyDone = isDailyCompleted();
+  const streak = getDailyStreak();
+  const modeConfig = getGameModeById(gameMode);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -43,14 +54,27 @@ export function MenuOverlay({
     return () => window.removeEventListener('keydown', onKey);
   }, []);
 
-  const start = (levelIndex = 0) => {
+  const start = (levelIndex = 0, opts?: { dailyChallenge?: boolean }) => {
     UISounds.confirm();
-    GameBridge.emit('start-game', { levelIndex, characterId });
+    Storage.setGameMode(gameMode);
+    GameBridge.emit('start-game', {
+      levelIndex,
+      characterId,
+      gameMode,
+      dailyChallenge: opts?.dailyChallenge,
+    });
+  };
+
+  const selectMode = (mode: GameModeId) => {
+    UISounds.click();
+    setGameMode(mode);
+    Storage.setGameMode(mode);
   };
 
   const completedLevels = Storage.getCompletedLevels();
   const playableLevels = LEVELS.filter((l) => !l.secret);
   const secretIndex = LEVELS.findIndex((l) => l.secret);
+  const allowLevelSelect = gameMode === 'adventure';
 
   return (
     <div className="overlay overlay-menu overlay--fullscreen screen-enter">
@@ -99,15 +123,104 @@ export function MenuOverlay({
 
             <div className="sign-divider" aria-hidden="true" />
 
+            <section className="sign-section sign-section--modes" aria-label="Game mode">
+              <p className="level-select-label">GAME MODE</p>
+              <div className="mode-select-grid">
+                {GAME_MODES.map((mode) => (
+                  <button
+                    key={mode.id}
+                    type="button"
+                    className={`mode-chip${gameMode === mode.id ? ' mode-chip--active' : ''}`}
+                    onClick={() => selectMode(mode.id)}
+                    title={mode.description}
+                    style={{ '--mode-color': mode.badgeColor } as React.CSSProperties}
+                  >
+                    <span className="mode-chip-icon">{mode.icon}</span>
+                    <span className="mode-chip-name">{mode.name}</span>
+                  </button>
+                ))}
+              </div>
+              <p className="mode-desc">{modeConfig.description}</p>
+            </section>
+
+            <div className="sign-divider" aria-hidden="true" />
+
+            <section className="sign-section sign-section--daily" aria-label="Daily challenge">
+              <div className={`daily-card${dailyDone ? ' daily-card--done' : ''}`}>
+                <div className="daily-card-header">
+                  <span className="daily-card-badge">DAILY</span>
+                  <span className="daily-card-date">{daily.dateKey}</span>
+                  {streak > 0 && <span className="daily-card-streak">🔥 {streak} day streak</span>}
+                </div>
+                <h3 className="daily-card-title">{daily.label}</h3>
+                <p className="daily-card-desc">{daily.description}</p>
+                <p className="daily-card-reward">Reward: {daily.rewardScore.toLocaleString()} pts</p>
+                <button
+                  type="button"
+                  className="btn-wood btn-wood--daily"
+                  disabled={dailyDone}
+                  onClick={() => start(daily.levelIndex, { dailyChallenge: true })}
+                >
+                  {dailyDone ? '✓ Completed Today' : '▶ Play Daily Challenge'}
+                </button>
+              </div>
+            </section>
+
+            <div className="sign-divider" aria-hidden="true" />
+
+            <section className="sign-section sign-section--nav">
+              <div className="menu-nav-tabs">
+                <button
+                  type="button"
+                  className={`menu-nav-tab${menuSection === 'play' ? ' menu-nav-tab--active' : ''}`}
+                  onClick={() => setMenuSection('play')}
+                >
+                  Play
+                </button>
+                <button
+                  type="button"
+                  className={`menu-nav-tab${menuSection === 'missions' ? ' menu-nav-tab--active' : ''}`}
+                  onClick={() => setMenuSection('missions')}
+                >
+                  Missions
+                </button>
+                <button
+                  type="button"
+                  className={`menu-nav-tab${menuSection === 'achievements' ? ' menu-nav-tab--active' : ''}`}
+                  onClick={() => setMenuSection('achievements')}
+                >
+                  Achievements
+                </button>
+              </div>
+            </section>
+
+            {menuSection === 'missions' && (
+              <section className="sign-section">
+                <MissionBoard />
+              </section>
+            )}
+
+            {menuSection === 'achievements' && (
+              <section className="sign-section">
+                <AchievementsGrid />
+              </section>
+            )}
+
+            {menuSection === 'play' && (
+            <>
+            <div className="sign-divider" aria-hidden="true" />
+
             <section className="sign-section sign-section--start">
               <button type="button" className="btn-start-coin" onClick={() => start(0)}>
                 <span className="btn-start-coin-inner">
                   <span className="btn-start-coin-shine" />
-                  START ADVENTURE
+                  {gameMode === 'adventure' ? 'START ADVENTURE' : `START ${modeConfig.name.toUpperCase()}`}
                 </span>
               </button>
             </section>
 
+            {allowLevelSelect && (
+            <>
             <div className="sign-divider" aria-hidden="true" />
 
             <section className="sign-section sign-section--world" aria-label="World selection">
@@ -153,6 +266,10 @@ export function MenuOverlay({
                 </div>
               </div>
             </section>
+            </>
+            )}
+            </>
+            )}
 
             <div className="sign-divider sign-divider--subtle" aria-hidden="true" />
 

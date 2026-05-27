@@ -16,6 +16,7 @@ export class InputManager {
     ENTER: Phaser.Input.Keyboard.Key;
     ESC: Phaser.Input.Keyboard.Key;
     P: Phaser.Input.Keyboard.Key;
+    E: Phaser.Input.Keyboard.Key;
   };
 
   constructor(scene: Phaser.Scene) {
@@ -34,6 +35,7 @@ export class InputManager {
       ENTER: kb.addKey(Phaser.Input.Keyboard.KeyCodes.ENTER),
       ESC: kb.addKey(Phaser.Input.Keyboard.KeyCodes.ESC),
       P: kb.addKey(Phaser.Input.Keyboard.KeyCodes.P),
+      E: kb.addKey(Phaser.Input.Keyboard.KeyCodes.E),
     };
   }
 
@@ -88,5 +90,9 @@ export class InputManager {
 
   get startPressed(): boolean {
     return Phaser.Input.Keyboard.JustDown(this.keys.ENTER) || Phaser.Input.Keyboard.JustDown(this.keys.SPACE);
+  }
+
+  get interactPressed(): boolean {
+    return Phaser.Input.Keyboard.JustDown(this.keys.E);
   }
 }

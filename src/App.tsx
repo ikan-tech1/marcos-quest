@@ -5,7 +5,7 @@ import { BootScene } from './scenes/BootScene';
 import { PreloadScene } from './scenes/PreloadScene';
 import { GameScene } from './scenes/GameScene';
 import { GameBridge } from './systems/GameBridge';
-import type { GameOverState, GameScreen, HudState, StartGamePayload } from './systems/GameBridge';
+import type { GameOverState, GameScreen, HudState, ShopPayload, StartGamePayload } from './systems/GameBridge';
 import { GameState } from './systems/GameState';
 import { Storage, type ViewMode } from './systems/Storage';
 import { VirtualInput } from './systems/VirtualInput';
@@ -16,6 +16,8 @@ import { GameOverOverlay } from './ui/GameOverOverlay';
 import { LoadingOverlay } from './ui/LoadingOverlay';
 import { LevelClearOverlay } from './ui/LevelClearOverlay';
 import { PauseOverlay } from './ui/PauseOverlay';
+import { ShopOverlay } from './ui/ShopOverlay';
+import { AchievementToast, MissionToast } from './ui/AchievementToast';
 import { TouchControls } from './ui/TouchControls';
 import { ArcadeCabinet } from './ui/ArcadeCabinet';
 import { UISounds } from './utils/uiSounds';
@@ -56,7 +58,7 @@ function emitToGameScene(event: string): void {
 
 const gameRefStatic = { current: null as Phaser.Game | null };
 
-const GAMEPLAY_SCREENS: GameScreen[] = ['playing', 'paused', 'level-clear', 'game-over'];
+const GAMEPLAY_SCREENS: GameScreen[] = ['playing', 'paused', 'level-clear', 'game-over', 'shop'];
 
 export function App() {
   const gameRef = useRef<Phaser.Game | null>(null);
@@ -79,6 +81,7 @@ export function App() {
   const [viewport, setViewport] = useState({ w: window.innerWidth, h: window.innerHeight });
   const [arcadeFallbackMsg, setArcadeFallbackMsg] = useState(false);
   const [levelError, setLevelError] = useState<string | null>(null);
+  const [shopState, setShopState] = useState<ShopPayload | null>(null);
   const [crtEffect, setCrtEffect] = useState<'jump' | 'dash' | 'fire' | 'no-fire' | 'color-test' | null>(null);
 
   const showGameViewport = GAMEPLAY_SCREENS.includes(screen);
@@ -110,12 +113,15 @@ export function App() {
     UISounds.setEnabled(Storage.getSoundEnabled());
 
     const unsubScreen = GameBridge.on('screen', (data) => {
-      const payload = data as { screen: GameScreen; data?: { levelError?: string } & Record<string, unknown> };
+      const payload = data as { screen: GameScreen; data?: { levelError?: string } & ShopPayload & Record<string, unknown> };
       const err = payload.data?.levelError;
       if (typeof err === 'string') {
         setLevelError(err);
       } else if (payload.screen === 'playing') {
         setLevelError(null);
+      }
+      if (payload.screen === 'shop' && payload.data) {
+        setShopState(payload.data as ShopPayload);
       }
       transitionTo(payload.screen, payload.data);
     });
@@ -125,14 +131,31 @@ export function App() {
     });
 
     const unsubStart = GameBridge.on('start-game', (data) => {
-      const { levelIndex = 0, characterId = Storage.getSelectedCharacter() } =
-        (data as StartGamePayload) ?? {};
+      const {
+        levelIndex = 0,
+        characterId = Storage.getSelectedCharacter(),
+        gameMode,
+        dailyChallenge,
+      } = (data as StartGamePayload) ?? {};
+      if (gameMode) Storage.setGameMode(gameMode);
       Storage.setSelectedCharacter(characterId);
       GameState.reset();
+      GameState.gameMode = gameMode ?? Storage.getGameMode();
+      GameState.isDailyChallenge = dailyChallenge ?? false;
       GameState.currentLevel = levelIndex;
       VirtualInput.reset();
       const game = gameRef.current;
       if (game) {
+        game.scene.start('GameScene', { levelIndex, characterId, gameMode: GameState.gameMode, dailyChallenge });
+        transitionTo('playing');
+      }
+    });
+
+    const unsubShop = GameBridge.on('continue-from-shop', (data) => {
+      const { levelIndex, characterId } = data as { levelIndex: number; characterId: string };
+      const game = gameRef.current;
+      if (game) {
+        GameState.currentLevel = levelIndex;
         game.scene.start('GameScene', { levelIndex, characterId });
         transitionTo('playing');
       }
@@ -197,6 +220,7 @@ export function App() {
       unsubRestart();
       unsubPause();
       unsubCabinetBonus();
+      unsubShop();
       unsubSound();
       gameRef.current?.destroy(true);
       gameRef.current = null;
@@ -437,6 +461,13 @@ export function App() {
             />
           )}
           {screen === 'level-clear' && <LevelClearOverlay />}
+          {screen === 'shop' && shopState && (
+            <ShopOverlay
+              shopCoins={shopState.shopCoins}
+              nextLevelIndex={shopState.nextLevelIndex}
+              characterId={shopState.characterId}
+            />
+          )}
           {showTouch && (screen === 'playing' || screen === 'paused') && <TouchControls />}
         </div>
       )}
@@ -462,6 +493,9 @@ export function App() {
           Arcade mode needs a larger screen — using fullscreen view
         </div>
       )}
+
+      <AchievementToast />
+      <MissionToast />
 
       {showHeroWorld && screen === 'menu' && (
         <footer className="site-footer site-footer--hero">

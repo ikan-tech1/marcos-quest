@@ -1,4 +1,6 @@
 import { LEVEL_TIME_SECONDS, STARTING_LIVES } from '../config/constants';
+import type { GameModeId } from './gameModes';
+import { getGameModeRules } from './gameModes';
 import { Storage } from './Storage';
 
 class GameStateManager {
@@ -11,17 +13,66 @@ class GameStateManager {
   timeLeft = LEVEL_TIME_SECONDS;
   flagBonus = 0;
   lastLevelBonus = 0;
+  gameMode: GameModeId = 'adventure';
+  isDailyChallenge = false;
+  speedrunStartMs = 0;
+  speedrunElapsedMs = 0;
+  coinRushTimeLeft = 0;
+  checkpointX = 0;
+  checkpointY = 0;
+  hasCheckpoint = false;
+  levelDamageTaken = false;
+  levelStomps = 0;
+  savedPowerState: 'small' | 'big' | 'blaze' = 'small';
+  dashCount = 0;
 
   reset(): void {
+    this.gameMode = Storage.getGameMode();
+    const rules = getGameModeRules(this.gameMode);
     this.score = 0;
     this.coins = 0;
-    this.lives = STARTING_LIVES;
+    this.lives = rules.startingLives;
     this.currentLevel = 0;
     this.combo = 0;
     this.comboTimer = 0;
     this.timeLeft = LEVEL_TIME_SECONDS;
     this.flagBonus = 0;
     this.lastLevelBonus = 0;
+    this.isDailyChallenge = false;
+    this.speedrunStartMs = 0;
+    this.speedrunElapsedMs = 0;
+    this.coinRushTimeLeft = rules.coinRushDuration;
+    this.hasCheckpoint = false;
+    this.levelDamageTaken = false;
+    this.levelStomps = 0;
+    this.savedPowerState = 'small';
+    this.dashCount = 0;
+  }
+
+  startSpeedrunTimer(): void {
+    this.speedrunStartMs = performance.now();
+    this.speedrunElapsedMs = 0;
+  }
+
+  tickSpeedrun(): void {
+    if (this.speedrunStartMs > 0) {
+      this.speedrunElapsedMs = performance.now() - this.speedrunStartMs;
+    }
+  }
+
+  finishSpeedrun(): number {
+    this.tickSpeedrun();
+    return this.speedrunElapsedMs;
+  }
+
+  setCheckpoint(x: number, y: number): void {
+    this.checkpointX = x;
+    this.checkpointY = y;
+    this.hasCheckpoint = true;
+  }
+
+  clearCheckpoint(): void {
+    this.hasCheckpoint = false;
   }
 
   resetTimer(seconds = LEVEL_TIME_SECONDS): void {
@@ -51,6 +102,7 @@ class GameStateManager {
   addStomp(): number {
     this.combo += 1;
     this.comboTimer = 2500;
+    this.levelStomps += 1;
     const points = 100 * this.comboMultiplier;
     this.score += points;
     return points;
@@ -59,6 +111,8 @@ class GameStateManager {
   addCoin(): boolean {
     this.coins += 1;
     this.score += 100;
+    Storage.addTotalCoins(1);
+    Storage.addShopCoins(1);
     if (this.coins >= 100) {
       this.coins = 0;
       this.lives += 1;

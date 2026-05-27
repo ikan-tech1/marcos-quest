@@ -139,6 +139,23 @@ export function spawnStarTrail(scene: Phaser.Scene, x: number, y: number): void 
   });
 }
 
+export function spawnCoinShower(scene: Phaser.Scene, x: number, y: number, count = 12): void {
+  for (let i = 0; i < count; i++) {
+    scene.time.delayedCall(i * 60, () => {
+      const coin = scene.add.image(x + Phaser.Math.Between(-40, 40), y - 20, 'coin');
+      coin.setDepth(80);
+      scene.tweens.add({
+        targets: coin,
+        y: y + 60,
+        alpha: 0,
+        duration: 800,
+        ease: 'Quad.easeIn',
+        onComplete: () => coin.destroy(),
+      });
+    });
+  }
+}
+
 export function spawnComboText(scene: Phaser.Scene, x: number, y: number, combo: number, mult: number): void {
   const text = scene.add.text(x, y - 20, `${combo}× COMBO! ×${mult}`, {
     fontSize: '14px',

@@ -1,5 +1,6 @@
 import type { HudState } from '../systems/GameBridge';
 import type { ViewMode } from '../systems/Storage';
+import { getGameModeById } from '../systems/gameModes';
 import { UISounds } from '../utils/uiSounds';
 
 interface Props {
@@ -26,10 +27,26 @@ export function HUD({
   onToggleViewMode,
 }: Props) {
   const timeClass = hud.timeLeft <= 100 ? 'hud-time hud-time--warn' : 'hud-time';
+  const modeConfig = hud.gameMode ? getGameModeById(hud.gameMode) : null;
+  const primaryMission = hud.missions?.find((m) => !m.completed);
 
   if (compact) {
     return (
       <div className={`overlay overlay-hud overlay-hud--compact${docked ? ' overlay-hud--docked' : ''}`}>
+        {modeConfig && (
+          <div className="hud-mode-badge" style={{ backgroundColor: modeConfig.badgeColor }}>
+            {modeConfig.icon} {modeConfig.name}
+          </div>
+        )}
+        {primaryMission && (
+          <div className="hud-mission-tracker" title={primaryMission.def.description}>
+            <span className="hud-mission-icon">🎯</span>
+            <span className="hud-mission-text">{primaryMission.def.title}</span>
+            <span className="hud-mission-progress">
+              {Math.min(primaryMission.progress, primaryMission.def.target)}/{primaryMission.def.target}
+            </span>
+          </div>
+        )}
         <header className="hud-bar hud-bar--compact">
           <div className="hud-compact-group hud-compact-group--left">
             <span className="hud-compact-stat">
@@ -48,7 +65,17 @@ export function HUD({
 
           <div className="hud-compact-group hud-compact-group--center">
             <span className="hud-world">{hud.world}</span>
-            <span className={timeClass}>TIME {Math.ceil(hud.timeLeft)}</span>
+            {hud.coinRushTime !== undefined ? (
+              <span className="hud-time hud-time--rush">RUSH {Math.ceil(hud.coinRushTime)}</span>
+            ) : hud.speedrunElapsed !== undefined ? (
+              <span className="hud-time hud-time--speedrun">
+                RUN {hud.speedrunElapsed}s
+                {hud.speedrunGhost ? ` · Ghost ${hud.speedrunGhost}s` : ''}
+              </span>
+            ) : (
+              <span className={timeClass}>TIME {Math.ceil(hud.timeLeft)}</span>
+            )}
+            {hud.checkpointActive && <span className="hud-checkpoint">⚑ SAVED</span>}
             <div className="hud-progress" aria-label="Level progress">
               {Array.from({ length: hud.totalLevels }, (_, i) => (
                 <span
@@ -105,7 +132,8 @@ export function HUD({
         </header>
 
         {hud.combo > 1 && (
-          <div className="hud-combo" key={hud.combo}>
+          <div className={`hud-combo hud-combo--flashy${hud.combo >= 5 ? ' hud-combo--mega' : ''}`} key={hud.combo}>
+            <span className="hud-combo-ring" aria-hidden="true" />
             <span className="hud-combo-count">{hud.combo}×</span>
             <span className="hud-combo-text">COMBO!</span>
             <span className="hud-combo-mult">×{hud.comboMultiplier}</span>
@@ -198,7 +226,8 @@ export function HUD({
       )}
 
       {hud.combo > 1 && (
-        <div className="hud-combo" key={hud.combo}>
+        <div className={`hud-combo hud-combo--flashy${hud.combo >= 5 ? ' hud-combo--mega' : ''}`} key={hud.combo}>
+          <span className="hud-combo-ring" aria-hidden="true" />
           <span className="hud-combo-count">{hud.combo}×</span>
           <span className="hud-combo-text">COMBO!</span>
           <span className="hud-combo-mult">×{hud.comboMultiplier}</span>

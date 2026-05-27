@@ -1,4 +1,14 @@
-export type GameScreen = 'loading' | 'menu' | 'playing' | 'paused' | 'level-clear' | 'game-over';
+import type { GameModeId } from './gameModes';
+import type { ActiveMission } from './missions';
+
+export type GameScreen =
+  | 'loading'
+  | 'menu'
+  | 'playing'
+  | 'paused'
+  | 'level-clear'
+  | 'game-over'
+  | 'shop';
 
 export interface HudState {
   score: number;
@@ -14,6 +24,12 @@ export interface HudState {
   timeLeft: number;
   levelBonus?: number;
   canFire?: boolean;
+  gameMode?: GameModeId;
+  speedrunElapsed?: number;
+  speedrunGhost?: number;
+  coinRushTime?: number;
+  missions?: ActiveMission[];
+  checkpointActive?: boolean;
 }
 
 export interface GameOverState {
@@ -26,6 +42,25 @@ export interface GameOverState {
 export interface StartGamePayload {
   levelIndex?: number;
   characterId?: string;
+  gameMode?: GameModeId;
+  dailyChallenge?: boolean;
+}
+
+export interface AchievementUnlockPayload {
+  id: string;
+  title: string;
+  icon: string;
+}
+
+export interface MissionCompletePayload {
+  title: string;
+  rewardScore: number;
+}
+
+export interface ShopPayload {
+  shopCoins: number;
+  nextLevelIndex: number;
+  characterId: string;
 }
 
 type Listener = (...args: unknown[]) => void;
