@@ -1,0 +1,21 @@
+- generic [ref=e3]:
+  - generic:
+    - generic:
+      - generic:
+        - generic:
+          - generic: SCORE
+          - text: "000000"
+          - generic: Eashan
+        - generic:
+          - generic: World 1-1
+          - generic: TIME 398
+        - generic:
+          - generic:
+            - generic: "00"
+          - generic:
+            - generic: LIVES
+            - generic: "3"
+          - generic: HI 000000
+      - generic [ref=e99]:
+        - button "Enter fullscreen" [ref=e100] [cursor=pointer]: ⛶
+        - button "Pause game" [ref=e101] [cursor=pointer]: ⏸
